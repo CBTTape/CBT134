@@ -1,0 +1,1490 @@
+REVEXSYM TITLE ' REVIEW EXTRACT SYMBOLS FOR RECORD STRUCTURE ITEMS '
+REVEXSYM RSECT
+REVEXSYM AMODE 31
+REVEXSYM RMODE 24
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+
+*
+*         INITIALIZATION
+*
+
+         USING REVEXSYM,R15
+         B     @START
+         DROP  R15
+         DC    AL1(21),CL11'REVEXSYM 1.1.0 &SYSDATC'
+@START   DC    0H
+         STM   R14,R12,12(R13)
+         LR    R11,R15
+         LA    R9,1
+         LA    R10,4095(R9,R11)
+         USING REVEXSYM,R11,R10
+
+         L     R3,=A($WORKLEN)
+         LR    R0,R3
+         GETMAIN RU,LV=(0),LOC=(24,64),BNDRY=PAGE
+**       LR    R2,R1
+**       SR    R15,R15             ZEROED PAGES WILL BE SUPPLIED
+**       MVCL  R2,R14
+
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+         LR    R12,R1
+         USING WORKAREA,R12
+
+*
+*         ACCUMULATE SYMBOL DATA FROM OBJECT DECK SYM CARDS
+*
+
+         ZAP   ITEM_NUM,=PL1'0'
+         MVI   BLANK,C' '
+         MVC   CARD,BLANK
+         MVC   DSCTCARD,CARD
+         LA    R0,SYM_DATA
+         ST    R0,SYM_CSR
+         MVC   INDCBW,INDCB1
+         MVC   OUTDCBW,OUTDCB
+         MVI   DBL,X'80'
+         OPEN  (INDCBW,INPUT),MF=(E,DBL)
+         MVI   DBL,X'80'
+         OPEN  (OUTDCBW,OUTPUT),MF=(E,DBL)
+
+IN_LOOP  DC    0H
+         GET   INDCBW
+         CLC   TWOSYM,0(R1)        SYM CARD?
+         BNE   IN_LOOP             NO, SKIP IT AND READ NEXT ONE
+         LA    R0,1                YES
+         A     R0,SYMIN_CT         COUNT IT
+         ST    R0,SYMIN_CT
+         LH    R15,10(,R1)         GET SYM TEXT LENGTH
+         L     R14,SYM_CSR         GET CURRENT CURSOR
+         LA    R2,16(,R1)          POINT TO SYM TEXT
+         LR    R3,R15              COPY SYM TEXT LENGTH
+         MVCL  R14,R2              APPEND NEW SYM TEXT
+         ST    R14,SYM_CSR         UPDATE CURSOR
+         B     IN_LOOP
+
+SYM_EOF  DC    0H                  END-OF-FILE REACHED
+         MVI   DBL,X'80'
+         CLOSE (INDCBW),MF=(E,DBL)
+         MVC   CARD(14),=CL14'REVSMFZ  RSECT'
+         PUT   OUTDCBW,CARD
+         MVC   CARD+9(8),=CL8'AMODE 31'
+         PUT   OUTDCBW,CARD
+         MVC   CARD+9(9),=CL9'RMODE ANY'
+         PUT   OUTDCBW,CARD
+         MVC   CARD,BLANK
+         MVI   CARD,C'*'
+         PUT   OUTDCBW,CARD
+         L     R0,SYMIN_CT
+         CVD   R0,DBL
+         MVC   CARD(8),ED7
+         ED    CARD(8),DBL+4
+         MVC   CARD+9(14),=CL14'SYM CARDS READ'
+         MVI   CARD,C'*'
+         PUT   OUTDCBW,CARD
+         L     R0,SYM_CSR
+         LA    R1,SYM_DATA
+         SR    R0,R1
+         CVD   R0,DBL
+         MVC   CARD,BLANK
+         MVC   CARD(8),ED7
+         ED    CARD(8),DBL+4
+         MVC   CARD+9(29),=CL29'BYTES OF SYMBOL METADATA READ'
+         MVI   CARD,C'*'
+         PUT   OUTDCBW,CARD
+         MVC   CARD,BLANK
+         MVI   CARD,C'*'
+         PUT   OUTDCBW,CARD
+
+         MVC   INDCBW,INDCB2
+         MVI   DBL,X'80'
+         OPEN  (INDCBW,INPUT),MF=(E,DBL)
+
+         MVC   CARD,BLANK          CREATE SMF RECORD TYPE DESCRIPTOR
+         MVC   CARD+9(L'SMF_RTD),SMF_RTD
+         PUT   OUTDCBW,CARD
+         MVC   CARD,BLANK          CREATE SMF RECORD TYPE ARRAY
+         MVC   CARD(22),=CL22'SMF_RECS DC    256A(0)'
+         PUT   OUTDCBW,CARD
+         MVC   CARD,BLANK
+         MVI   CARD,C'*'
+         PUT   OUTDCBW,CARD
+         MVC   CARD+11(5),=CL5'EQU 0'
+         LA    R3,SKPST_TB         POINT TO MISSING SUBTYPE LIST
+         LA    R4,$SKPST#          GET THE ENTRY COUNT
+SKPST_LP DC    0H
+         MVC   CARD(10),0(R3)      LOAD LABEL
+         PUT   OUTDCBW,CARD        WRITE THE EQUATE STATEMENT
+         LA    R3,10(,R3)          POINT TO THE NEXT TABLE ENTRY
+         BCT   R4,SKPST_LP         PROCESS ALL ENTRIES
+         MVC   CARD,BLANK
+         MVI   CARD,C'*'
+         PUT   OUTDCBW,CARD
+
+
+* _____________________________________________________________________
+*
+*         STRUCTURE OF SYMBOL DATA
+*
+
+ORGVALUE EQU   0                   ORGANIZATION VALUE BYTE
+
+$DATASW  EQU   X'80'               0=NON-DATA, 1=DATA
+$OTHTYPE EQU   X'70'               NON-DATA TYPE INDICATOR
+
+* -------------------------------- NON-DATA TYPES
+*        EQU   X'0.'               SPACE
+*        EQU   X'1.'               CSECT - CONTROL SECTION
+*        EQU   X'2.'               DSECT - DUMMY SECTION
+*        EQU   X'3.'               COM - COMMON SECTION
+*        EQU   X'4.'               INSTRUCTION
+*        EQU   X'5.'               CCW
+*        EQU   X'6.'               N/A
+*        EQU   X'7.'               N/A
+
+* -------------------------------- DATA FLAGS
+$MULT    EQU   X'40'               DATA: M FIELD PRESENT FLAG
+$CLUST   EQU   X'20'               DATA: CLUSTER (P OR Z TYPE)
+$SCALE   EQU   X'10'               DATA: S FIELD PRESENT FLAG
+
+* -------------------------------- NAME INDICATOR/LENGTH
+$NONAME  EQU   X'08'               NAME FIELD ABSENT FLAG
+$NAMELEN EQU   X'07'               LENGTH CODE OF NAME
+
+* -------------------------------- END OF ORGANIZATION BYTE
+
+SECTOFST EQU   1                   OFFSET WITHIN SECTION (3 BYTES)
+
+SYMNAME  EQU   4                   SYMBOL NAME (UP TO 8 BYTES PLUS
+*                                  EXTRA BYTE FOR NON-DATA SPACE TYPE)
+
+*                                  DATA TYPE (1 BYTE)
+*              X'00' = C - CHARACTER
+*              X'04' = X - HEXADECIMAL OR PURE DBCS (G-TYPE)
+*              X'08' = B - BINARY
+*              X'10' = F - FIXED POINT, FULL
+*              X'14' = H - FIXED POINT, HALF
+*              X'18' = E - FLOATING POINT, SHORT
+*              X'1C' = D - FLOATING POINT, LONG
+*              X'20' = A - A-TYPE OR Q-TYPE DATA
+*              X'24' = Y - Y-TYPE DATA
+*              X'28' = S - S-TYPE DATA
+*              X'2C' = V - V-TYPE DATA
+*              X'30' = P - PACKED DECIMAL
+*              X'34' = Z - ZONED DECIMAL
+*              X'38' = L - FLOATING POINT, EXTENDED
+
+*                                  LENGTH CODE OF DATA ITEM (2 BYTES
+*                                  FOR C AND X AND B, 1 BYTE OTHERWISE)
+
+*                                  MULTIPLICITY - M FIELD (3 BYTES)
+
+*                                  SCALE - S FIELD
+*                                  (SIGNED INTEGER - 2 BYTES)
+* _____________________________________________________________________
+
+*
+*         PARSE SYMBOL DATA
+*
+
+         LA    R8,SYM_DATA             POINT TO DATA TO PARSE
+SYM_ITEM DC    0H
+         LR    R2,R8                   POINT TO NEXT ITEM'S DETAILS
+         MVC   CARD,BLANK              CLEAR BUFFER
+         LA    R8,SYMNAME(,R2)         POINT PAST FIXED DATA PART
+
+         TM    ORGVALUE(R2),$NONAME    ANY NAME PRESENT?
+         BO    SYMNAMOK                NO
+         IC    R1,ORGVALUE(,R2)        YES
+         LA    R0,$NAMELEN             GET LENGTH BITS MASK
+         NR    R1,R0                   EXTRACT NAME LENGTH CODE
+NAMESHOW MVC   CARD(0),SYMNAME(R2)     <<< EXECUTED >>>
+         EX    R1,NAMESHOW             LOAD SYMBOL NAME
+         LA    R8,1(R1,R8)             POINT PAST NAME
+SYMNAMOK DC    0H
+
+         TM    ORGVALUE(R2),$DATASW    DATA ITEM?
+         BO    DATAITEM                YES
+
+         IC    R1,ORGVALUE(,R2)
+         LA    R0,$OTHTYPE             GET LENGTH BITS MASK
+         NR    R1,R0                   EXTRACT NON-DATA TYPE
+         LA    R0,X'20'                GET VALUE FOR DSECT
+         MVI   CRNTDSCT,C'9'           INVALIDATE DSECT NAME
+         CLR   R1,R0                   IS DSECT THE NON-DATA TYPE?
+         BNE   DROP_SYM                NO
+
+         LA    R0,$D_RENCT             GET RENAME TABLE ENTRY COUNT
+         LA    R3,D_RENAME             POINT TO RENAME TABLE
+D_REN_LP DC    0H
+         CLC   0(9,R3),CARD            FOUND A MATCH?
+         BE    DORENAME                YES
+         LA    R3,$D_RENLN(,R3)        NO, POINT TO NEXT ENTRY
+         BCT   R0,D_REN_LP
+         B     IS_DSECT                NO MATCH FOUND
+***       NOTE THAT DSECT RENAMING MATCHES ON 9 BYTES,            ***
+***       BUT CAN SET A NEW NAME UP TO 10 BYTES LONG              ***
+DORENAME DC    0H
+         MVC   CARD(10),10(R3)         RENAME THE DSECT
+
+***  THE NEXT INSTRUCTION IS WHY THIS PROGRAM CAN'T BE REENTRANT  ***
+         MVI   0(R3),X'FF'             DEACTIVATE THIS TABLE ENTRY
+
+         CLI   20(R3),C' '             NEW BATCH OF SUBTYPES?
+         BNH   IS_DSECT                NO, JUST RENAMING A DSECT
+
+***  CREATE SUBTYPE ROUTING STRUCTURE AND POINTER VECTOR          ***
+         MVI   DSCTCARD,C' '           BLANK A BUFFER
+         MVC   DSCTCARD+1(L'DSCTCARD-1),DSCTCARD
+         MVC   DSCTCARD(6),=CL6'SMFRCD'
+         MVC   DSCTCARD+6(2),20(R3)    SET SMF RECORD TYPE
+         LA    R1,DSCTCARD             POINT TO THIS NEW LABEL
+         OI    FLAGS1,$CSTT            RESTRICT SUBROUTINE FUNCTION
+         BAS   R14,SECTOPTS            PLUG-IN SUBTYPE FILTER TABLE
+         NI    FLAGS1,255-$CSTT        RESET FLAG
+         LA    R1,DSCTCARD+9           POINT TO COLUMN 10
+         CLI   DSCTCARD+8,C' '         GOT A LONG LABEL?
+         BE    *+8                     NO
+         LA    R1,DSCTCARD+10          YES, GIVE IT SOME ROOM
+         CLI   DSCTCARD+10,C' '        GOT A LONGER LABEL?
+         BE    *+8                     NO
+         LA    R1,DSCTCARD+11          YES, GIVE IT SOME MORE ROOM
+         MVC   0(L'SUB_RTD,R1),SUB_RTD CREATE SUBTYPE TABLE
+         LH    R6,22(,R3)              GET SUBTYPE COUNT
+         CVD   R6,DBL
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  L'SUB_RTD(5,R1),DBL     SET SUBTYPE UPPER LIMIT
+***       NOTE THAT SUBTYPE 0 IS NOT SUPPORTED BY THIS LOGIC      ***
+***        (SMF TYPE 30 DOES NOT USE THIS LOGIC BECAUSE THE       ***
+***        SAME SECTION STRUCTURE IS USED FOR ALL SUBTYPES        ***
+***        AND SO TYPE 30 NEEDS NO SUBTYPE FILTER TABLE)          ***
+SUBLIM0S DC    0H
+         CLI   L'SUB_RTD(R1),C'0'      LEADING ZERO?
+         BNE   SUBLIM0K                NO
+         MVC   L'SUB_RTD(5,R1),L'SUB_RTD+1(R1)
+         B     SUBLIM0S                LEADING ZERO NOW SUPPRESSED
+SUBLIM0K DC    0H
+         PUT   OUTDCBW,DSCTCARD        WRITE SUBTYPING SPEC
+         MVI   CARDHOLD,C' '           BLANK A BUFFER
+         MVC   CARDHOLD+1(L'CARDHOLD-1),CARDHOLD
+         ZAP   DBL,=PL1'0'             RESET INITIAL SUBTYPE
+         MVC   CARDHOLD+9(8),=CL8'DC    A('
+         MVC   CARDHOLD+17(8),CARD     SET HEADER NAME BASE
+SUBVECLP DC    0H
+         AP    DBL,=PL1'1'             INCREMENT SUBTYPE
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  CARDHOLD+25(3),DBL      APPEND SUBTYPE NUMBER
+         MVI   CARDHOLD+28,C')'        COMPLETE THE STATEMENT
+SUBVEC0S DC    0H
+         CLI   CARDHOLD+25,C'0'        LEADING ZERO?
+         BNE   SUBVEC0K                NO
+         MVC   CARDHOLD+25(4),CARDHOLD+26
+         B     SUBVEC0S                LEADING ZERO NOW SUPPRESSED
+SUBVEC0K DC    0H
+         PUT   OUTDCBW,CARDHOLD        WRITE SUBTYPE HEADER POINTER
+         BCT   R6,SUBVECLP             POINT TO ALL SUBTYPES
+IS_DSECT DC    0H
+         MVC   CRNTDSCT,CARD           SAVE CURRENT DSECT NAME
+         XC    CRNTOFST,CRNTOFST       RESET OFFSET
+         LA    R1,CARD                 POINT TO STATEMENT
+         BAS   R14,SECTOPTS            SET SECTION OPTIONS
+         PUT   OUTDCBW,CARD            WRITE SECTION DETAILS
+         B     DROP_SYM                SKIP COMMENT EXTRACTION
+
+DATAITEM DC    0H
+         MVI   FLAGS3,0                CLEAR ITEM FLAGS
+         SR    R4,R4                   CLEAR FOR INSERT
+         IC    R4,0(,R8)               LOAD DATA TYPE CODE
+         SRA   R4,2                    DIVIDE CODE BY 4
+         IC    R4,DC_TYPES(R4)         GET DATA TYPE CODE
+         STC   R4,CARD+70              REPORT DATA TYPE
+         LA    R0,1                    GET LENGTH FIELD LENGTH
+         SR    R4,R4                   CLEAR ACCUMULATOR
+         CLI   0(R8),X'08'             CHARACTER OR HEXADECIMAL?
+         LA    R8,1(,R8)               POINT TO LENGTH FIELD
+         BH    DATLENLP                NO
+         LA    R0,2                    YES, ADJUST LENGTH
+DATLENLP DC    0H
+         SLL   R4,8                    PROMOTE PREVIOUS BITS
+         IC    R4,0(,R8)               INSERT LENGTH BITS
+         LA    R8,1(,R8)               POINT PAST PROCESSED BYTE
+         BCT   R0,DATLENLP
+         LA    R4,1(,R4)               CONVERT LENGTH CODE TO LENGTH
+
+         LA    R5,1                    LOAD IMPLIED MULTIPLICITY
+         TM    ORGVALUE(R2),$MULT      M FIELD PRESENT?
+         BZ    MULT_OK                 NO, NO MULTIPLICITY
+         ICM   R5,7,0(R8)              YES, LOAD IT
+         LA    R8,3(,R8)               POINT PAST M FIELD
+MULT_OK  DC    0H
+         MR    R4,R4                   GET TOTAL ITEM BYTE SIZE IN R5
+
+         SR    R14,R14                 CLEAR FOR INSERT
+         SR    R15,R15                 CLEAR FOR INSERT
+         ICM   R14,7,1(R2)             LOAD ITEM OFFSET
+ADDSPCLP DC    0H
+         C     R8,SYM_CSR              IS THIS THE LAST ITEM?
+         BNL   SPACE_OK                YES, NO SPACE FOLLOWS
+         CLI   0(R8),X'08'             IS NAMELESS SPACE NEXT?
+         BNE   SPACE_OK                NO
+         LA    R0,0(R5,R14)            GET OFFSET PAST ITEM
+         CLM   R0,7,1(R8)              IS THIS OFFSET OF NEW SPACE?
+         BNE   SPACE_OK                NO, END OF AUTOMATIC APPEND
+         IC    R15,SECTOFST+3(,R8)     YES, GET TO SIZE OF SPACE
+         AR    R5,R15                  ADD IT TO ITEM'S SIZE
+         LA    R8,SECTOFST+4(,R8)      POINT PAST PROCESSED SPACE
+         B     ADDSPCLP                ACCUMULATE UNNAMED SPACE
+SPACE_OK DC    0H
+
+         TM    ORGVALUE(R2),$SCALE     S FIELD PRESENT?
+         BZ    SCALE_OK                NO, ZERO SCALING
+         LA    R8,2(,R8)               POINT PAST S FIELD
+SCALE_OK DC    0H
+
+         CLI   CARD,C' '               NAMED ITEM?
+         BNE   NAMED_OK                YES
+         CLC   SECTOFST(3,R2),CRNTOFST+1
+         BL    DROP_SYM                DROP NON-CURRENT UNNAMED ITEM
+NAMED_OK DC    0H
+         CLC   =CL6'SMFRCD',CARD       NEW SMF RECORD?
+         BE    IS_DSECT                YES, TREAT AS NEW DSECT
+
+         MVC   CARD+38(7),=C'RECITEM'  ITEM DESCRIPTOR
+         LTR   R5,R5                   WAS SIZE ZERO?
+         BNZ   FIELD_OK                NO
+         MVC   CARD+38(7),=C'ZEROFLD'  YES, DUMMY OUT OPERATION
+FIELD_OK DC    0H
+
+         CLC   =C'TME ',CARD+4         BINARY TOD?
+         BE    BIN_TIME                YES
+         CLI   CARD+4,C'0'             NUMERIC?
+         BNE   BINTODOK                NO
+         CLC   =C'TME ',CARD+4         BINARY TOD?
+         BNE   BINTODOK                NO
+BIN_TIME DC    0H
+         OI    FLAGS3,$BINTOD          FLAG BINARY TOD FIELD
+BINTODOK DC    0H
+         ICM   R0,7,SECTOFST(R2)       IS ITEM AT OFFSET ZERO?
+         BNZ   SHOW_SYM                NO, NOT A NEW STRUCTURE
+         CLC   =CL3'SMF',CARD          EXPECTED PREFIX?
+         BE    SMFR_CHK                YES
+         LA    R0,$DSECTB#             NO
+         LA    R3,DSECTTBL             LOOK AT OTHER KNOWN NAMES
+DSCTCKLP DC    0H
+         CLC   0(8,R3),CARD            FOUND A MATCH?
+         BE    THISRECD                YES
+         LA    R3,10(,R3)              NO, POINT TO NEXT ENTRY
+         BCT   R0,DSCTCKLP
+         B     SHOW_SYM                NO MATCH FOUND
+THISRECD DC    0H
+         MVC   DBL(2),8(R3)            GET RECORD TYPE NUMERICS
+         B     SECT_CHK
+SMFR_CHK DC    0H
+         CLI   CARD+3,C'0'             EXPECTED NUMERIC?
+         BL    SHOW_SYM                NO
+         MVC   DBL(1),CARD+3           YES, COPY IT
+         MVI   DBL+1,C' '
+         CLC   =CL4'LEN ',CARD+4       SINGLE-DIGIT LENGTH FIELD?
+         BE    SECT_CHK                YES
+         CLC   =CL4'LEN ',CARD+5       DOUBLE-DIGIT LENGTH FIELD?
+         BNE   SHOW_SYM                NO
+         CLI   CARD+4,C'0'             EXPECTED NUMERIC?
+         BL    SHOW_SYM                NO
+         MVC   DBL+1(1),CARD+4         YES, COPY IT
+         CLI   CARD+3,C'7'             RMF SMF RECORD?
+         BE    SHOW_SYM                YES, ALREADY HANDLED ELSEWHERE
+SECT_CHK DC    0H
+         MVI   DSCTCARD,C' '           BLANK OUTPUT BUFFER
+         MVC   DSCTCARD+1(L'DSCTCARD-1),DSCTCARD
+         MVC   DSCTCARD(6),=CL6'SMFRCD'
+         MVC   DSCTCARD+6(2),DBL
+PUT_SECT DC    0H
+         CLC   CRNTDSCT,DSCTCARD       CORRECT DSECT ALREADY CURRENT?
+         BE    SHOW_SYM                YES, NO NEED FOR INSERTION
+         LA    R1,DSCTCARD             POINT TO STATEMENT
+         BAS   R14,SECTOPTS            SET SECTION OPTIONS
+         PUT   OUTDCBW,DSCTCARD
+         MVC   CRNTDSCT,DSCTCARD       UPDATE CURRENT DSECT NAME
+         XC    CRNTOFST,CRNTOFST       RESET OFFSET
+
+SHOW_SYM DC    0H
+         SR    R0,R0                   CLEAR FOR INSERT
+         ICM   R0,7,SECTOFST(R2)       GET ITEM'S OFFSET
+         CVD   R0,DBL
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  CARD+46(5),DBL          SPECIFY THE OFFSET
+         MVI   CARD+51,C','
+         CVD   R5,DBL
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  CARD+52(5),DBL          SPECIFY THE SIZE
+         LA    R15,4                   SUPPRESS UP TO 4 LEADING ZEROES
+         LA    R14,4                   SUPPRESS UP TO 4 LEADING ZEROES
+ZERO_LP1 DC    0H
+         CLI   CARD+52,C'0'            LEADING ZERO IN DECIMAL SIZE?
+         BNE   ZERO_LP2                NO
+         MVC   CARD+52(5),CARD+53      YES, SUPPRESS IT
+         BCT   R15,ZERO_LP1
+ZERO_LP2 DC    0H
+         CLI   CARD+46,C'0'            LEADING ZERO IN DECIMAL OFFSET?
+         BNE   ZEROS_OK                NO
+         MVC   CARD+46(11),CARD+47     YES, SUPPRESS IT
+         BCT   R14,ZERO_LP2
+ZEROS_OK DC    0H
+*        CLI   CARD+38,C'Z'            IS IT A ZERO LENGTH FIELD?
+*        BE    DROP_SYM                YES, SUPPRESS IT
+         LTR   R5,R5                   IS IT A ZERO LENGTH FIELD?
+         BZ    DROP_SYM                YES, SUPPRESS IT
+         AR    R0,R5                   UPDATE CURRENT OFFSET
+         ST    R0,CRNTOFST             SAVE UPDATED VALUE
+         CLI   CARD,C' '               NAMED ITEM?
+         BH    IS_NAMED                YES
+         B     ITEMANON                NO
+
+LOOPANON DC    0H
+         TM    FLAGS1,$EOF             END-OF-FILE REACHED?
+         BO    PUT_CARD                YES
+         GET   INDCBW,PRT_LINE         GET ASSEMBLER PRINT LINE
+ITEMANON DC    0H
+         LR    R15,R2                  SAVE PRE-TRT R2
+         TRT   PRT_LINE+1(6),NONHEXTB  OFFSET PRESENT IN PRINT LINE?
+         LR    R2,R15                  RESTORE PRE-TRT R2
+         BNZ   LOOPANON                NO, KEEP LOOKING
+         TR    PRT_LINE+1(6),HEXCHRTB  CONVERT LETTERS TO NUMBERS
+         PACK  DBL,PRT_LINE+1(6)       PACK THE OFFSET
+         L     R14,DBL+4
+         SRL   R14,4                   GET THE OFFSET
+         CLM   R14,7,SECTOFST(R2)      AT THE RIGHT SPOT?
+         BL    LOOPANON                NO
+         BH    PUT_CARD                NO, GONE PAST IT
+         CLI   PRT_LINE+41,C' '        ANY LABEL PRESENT?
+         BE    PUT_CARD                NO
+         LA    R0,36                   GET SUPPORTED NAME LENGTH LIMIT
+         LA    R14,CARD                SET TARGET POINTER
+         LA    R15,PRT_LINE+41         SET SOURCE POINTER
+SET_NMLP DC    0H
+         MVC   0(1,R14),0(R15)         COPY A NAME CHARACTER
+         BCTR  R0,0                    DECREMENT BYTES-TO-GO
+         LA    R14,1(,R14)             ADJUST TARGET POINTER
+         LA    R15,1(,R15)             ADJUST SOURCE POINTER
+         CLI   0(R15),C' '             REACHED END OF NAME?
+         BE    PUT_CARD                YES
+         BCT   R0,SET_NMLP
+         B     PUT_CARD
+
+LP_NAMED DC    0H
+         TM    FLAGS1,$EOF             END-OF-FILE REACHED?
+         BO    PUT_CARD                YES
+         GET   INDCBW,PRT_LINE         GET ASSEMBLER PRINT LINE
+IS_NAMED DC    0H
+         CLC   CARD(9),PRT_LINE+41     FOUND MATCHING LABEL?
+         BNE   LP_NAMED                NO, KEEP LOOKING
+         MVC   CARD+9(22),CARD+38      NAME LENGTH < 9
+         MVC   CARD+31(38),CARD+30     SO MAKE ALIGNMENT NICE
+PUT_CARD DC    0H
+         PUT   OUTDCBW,CARD            WRITE ITEM DETAILS
+         BAS   R14,GET_CMTS            GO EXTRACT COMMENTS FOR ITEM
+DROP_SYM DC    0H
+         C     R8,SYM_CSR              REACHED END OF DATA?
+         BL    SYM_ITEM                NO, GO PROCESS NEXT ITEM
+
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         MVC   CARD+9(13),=CL13'END   REVSMFZ'
+         PUT   OUTDCBW,CARD            WRITE END STATEMENT
+         MVI   DBL,X'80'
+         CLOSE (INDCBW),MF=(E,DBL)
+         MVI   DBL,X'80'
+         CLOSE (OUTDCBW),MF=(E,DBL)
+
+WINDITUP DC    0H
+         L     R13,4(,R13)
+         L     R0,=A($WORKLEN)
+         LR    R1,R12
+         FREEMAIN RU,LV=(0),A=(1)
+         LM    R14,R12,12(R13)
+         SR    R15,R15
+         BR    R14
+
+
+*  SECTION OPTIONS ROUTINE - GENERATE A RECSECT STATEMENT
+
+*   R1 -> COLUMN 1 OF RECSECT STATEMENT RECORD
+*  R13 -> REGISTER SAVE AREA
+*  R14 -> RETURN POINT
+*  DBL -- USED AS A WORK AREA
+SECTOPTS DC    0H                      DETERMINE SECTION OPTIONS
+         STM   R14,R12,12(R13)         SAVE REGISTERS
+         LA    R14,72(,R13)            POINT TO NEXT SAVE AREA
+         ST    R13,4(,R14)             CHAIN THEM
+         ST    R14,8(,R13)
+         LR    R13,R14                 ACTIVATE NEW SAVE AREA
+
+         TM    FLAGS1,$CSTT            CREATING SUBTYPE TABLE?
+         BO    STPLUGIN                YES, JUST PLUG IT IN
+
+         MVC   32(7,R1),=C'RECSECT'    SET STATEMENT TYPE
+         XC    DBL,DBL                 CLEAR WORK AREA
+         LARL  R2,SECNAMES             POINT TO KNOWN-NAME TABLE
+         LA    R3,$SECNM#              GET TABLE ENTRY COUNT
+SECNAMLP DC    0H
+         CLC   0($SECNMLN-3,R1),0(R2)  NAME MATCH?
+         BE    FOUNDSEC                YES
+         LA    R2,$SECNMLN(,R2)        POINT TO NEXT ENTRY
+         BCT   R3,SECNAMLP
+         B     SECOPTS                 GO SET SECTION OPTIONS
+FOUNDSEC DC    0H                      NAME FOUND IN TABLE
+         MVC   DBL+1(1),$SECNMLN-4(R2) COPY OPTION FLAGS
+         MVC   DBL+3(1),$SECNMLN-3(R2) COPY SECTION LEVEL
+         MVC   DBL+6(2),$SECNMLN-2(R2) COPY INDICATOR OFFSET
+         TM    $SECNMLN-3(R2),X'80'    LAST SECTION OF RECORD?
+         BO    SECOPTS                 YES
+         MVI   53(R1),C','             NO, SUPPLY NEXT SECTION NAME
+         MVC   54($SECNMLN-3,R1),$SECNMLN(R2)
+SECOPTS  DC    0H                      NAME FOUND IN TABLE
+         LH    R4,DBL                  LOAD FLAGS
+         LH    R5,DBL+2                LOAD LEVEL
+         L     R6,DBL+4                LOAD OFFSET
+         CVD   R4,DBL
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  40(3,R1),DBL            APPEND DECIMAL BYTE VALUE
+         MVI   43(R1),C','
+         CVD   R5,DBL
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  44(3,R1),DBL            APPEND DECIMAL BYTE VALUE
+         MVI   47(R1),C','
+         CVD   R6,DBL
+         OI    DBL+7,X'0F'             PREPARE FOR UNPACK
+         UNPK  48(5,R1),DBL            APPEND DECIMAL OFFSET VALUE
+         LA    R15,4                   SUPPRESS UP TO 4 LEADING ZEROES
+         LA    R14,2                   SUPPRESS UP TO 2 LEADING ZEROES
+         LA    R6,2                    SUPPRESS UP TO 2 LEADING ZEROES
+ZERO_LP3 DC    0H
+         CLI   48(R1),C'0'             LEADING ZERO IN DECIMAL OFFSET?
+         BNE   ZERO_LP4                NO
+         MVC   48(16,R1),49(R1)        YES, SUPPRESS IT
+         BCT   R15,ZERO_LP3
+ZERO_LP4 DC    0H
+         CLI   40(R1),C'0'             LEADING ZERO IN DECIMAL LEVEL?
+         BNE   ZERO_LP5                NO
+         MVC   44(20,R1),45(R1)        YES, SUPPRESS IT
+         BCT   R14,ZERO_LP4
+ZERO_LP5 DC    0H
+         CLI   40(R1),C'0'             LEADING ZERO IN DECIMAL FLAGS?
+         BNE   ZEROS_GD                NO
+         MVC   40(24,R1),41(R1)        YES, SUPPRESS IT
+         BCT   R6,ZERO_LP5
+ZEROS_GD DC    0H
+         CLC   =CL2'  ',14(R1)         OKAY TO MOVE VERB TO COLUMN 16?
+         BNE   SECTDONE                NO
+         LA    R15,15(,R1)             YES, POINT TO IT
+         CLC   =CL2'  ',8(R1)          OKAY TO MOVE VERB TO COLUMN 10?
+         BNE   *+8                     NO
+         LA    R15,9(,R1)              YES, POINT TO IT
+         MVC   0(38,R15),32(R1)        IMPROVE STATEMENT TEXT ALIGNMENT
+         MVC   47(25,R1),46(R1)        BLANK OUT SOURCE LOCATIONS
+SECTDONE DC    0H                      NAME FOUND IN TABLE
+         CLC   =CL6'SMFRCD',0(R1)      NEW SMF RECORD?
+         BNE   SMFRCDOK                NO
+
+***  AFTER SUBROUTINE ENTRY, LOGIC JUMPS TO THIS POINT IF THE       ***
+***  PURPOSE IS TO ONLY UPDATE THE PRIMARY RECORD TYPE STRUCTURE    ***
+***  ADDRESS FILTER TABLE WITH THE ADDRESS OF A SECONDARY RECORD    ***
+***  SUBTYPE STRUCTURE ADDRESS FILTER TABLE, THEREBY REUSING CODE   ***
+STPLUGIN DC    0H                      CONNECT 2NDRY FILTER TO PRIMARY
+
+         MVI   CARDHOLD,C' '           BLANK A BUFFER
+         MVC   CARDHOLD+1(L'CARDHOLD-1),CARDHOLD
+         MVC   CARDHOLD+9(3),=CL3'ORG'
+         MVC   CARDHOLD+15(12),=CL12'SMF_RECS+(4*'
+         MVC   CARDHOLD+27(3),6(R1)
+         LA    R14,CARDHOLD+28
+RCD_LOOP DC    0H
+         CLI   0(R14),C' '             UP TO BLANKS YET?
+         BE    RCD_BRAK                YES
+         LA    R14,1(,R14)             NO, POINT TO NEXT CHARACTER
+         B     RCD_LOOP
+RCD_BRAK DC    0H
+         MVI   0(R14),C')'             COMPLETE THE STATEMENT
+         LR    R2,R1                   POINT TO LABEL OF RECSECT STMT
+         PUT   OUTDCBW,CARDHOLD        WRITE ORG STATEMENT
+         MVI   CARDHOLD,C' '           BLANK A BUFFER
+         MVC   CARDHOLD+1(79),CARDHOLD
+         MVC   CARDHOLD+9(8),=CL8'DC    A('
+         MVC   CARDHOLD+17(9),0(R2)
+         LA    R14,CARDHOLD+24
+ADCON_LP DC    0H
+         CLI   0(R14),C' '             UP TO BLANKS YET?
+         BE    RCD_ADCN                YES
+         LA    R14,1(,R14)             NO, POINT TO NEXT CHARACTER
+         B     ADCON_LP
+RCD_ADCN DC    0H
+         MVC   0(9,R14),=CL9'-REVSMFZ)'
+         PUT   OUTDCBW,CARDHOLD        WRITE DC A(..) STATEMENT
+         CLC   =C'14-',CARDHOLD+23     SMF TYPE 14?
+         BNE   NOT_1415                NO
+         PUT   OUTDCBW,CARDHOLD        YES, ALSO HOOK UP SMF TYPE 15
+NOT_1415 DC    0H
+         MVI   CARDHOLD,C' '           BLANK A BUFFER
+         MVC   CARDHOLD+1(79),CARDHOLD
+         MVC   CARDHOLD+9(3),=CL3'ORG'
+         PUT   OUTDCBW,CARDHOLD        WRITE ORG STATEMENT
+
+SMFRCDOK DC    0H
+         L     R13,4(,R13)             POINT TO CALLER'S SAVE AREA
+         LM    R14,R12,12(R13)         RESTORE REGISTERS
+         BR    R14                     RETURN TO CALLER
+
+
+*  EODAD ROUTINE FOR THE ASMPRTIN DD
+PRT_EOF  DC    0H
+         OI    FLAGS1,$EOF             FLAG END-OF-FILE REACHED
+         B     PUT_CARD
+
+
+*  COMMENTS EXTRACTION ROUTINE
+
+*  R13 -> REGISTER SAVE AREA
+*  R14 -> RETURN POINT
+*  DBL -- USED AS A WORK AREA
+GET_CMTS DC    0H
+         STM   R14,R12,12(R13)         SAVE REGISTERS
+         LA    R14,72(,R13)            POINT TO NEXT SAVE AREA
+         ST    R13,4(,R14)             CHAIN THEM
+         ST    R14,8(,R13)
+         LR    R13,R14                 ACTIVATE NEW SAVE AREA
+
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         MVC   CARD+9(12),=CL12'DC    AL2(0)'
+         MVC   CARD+39(11),=CL11'NO COMMENTS'
+
+         TM    FLAGS1,$EOF             END-OF-FILE REACHED?
+         BO    DONE_CMT                YES, SKIP COMMENTS
+         CLI   PRT_LINE+41,C' '        NAMED ITEM?
+         BE    DONE_CMT                NO, SKIP COMMENTS
+         CLI   PRT_LINE+39,C'0'        IS LINE AN ASSEMBLER STATEMENT?
+         BL    DONE_CMT                NO, SKIP COMMENTS
+
+         NI    FLAGS1,255-$QOT         NOT WITHIN QUOTED TEXT
+         AP    ITEM_NUM,=PL1'1'        INCREMENT ITEM NUMBER
+         UNPK  DBL,ITEM_NUM
+         OI    DBL+7,X'F0'             ENSURE NUMERIC EBCDIC
+         MVI   CARD+19,C'E'            NAME END LABEL
+         MVC   CARD+20(6),DBL+2
+         MVI   CARD+26,C'-'
+         MVI   CARD+27,C'S'            NAME START LABEL
+         MVC   CARD+28(6),DBL+2
+         MVI   CARD+34,C')'
+         PUT   OUTDCBW,CARD
+         MVC   CARD+39(18),=CL18'LENGTH OF COMMENTS'
+
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         MVI   CARD,C'S'               CONSTRUCT COMMENT START LABEL
+         MVC   CARD+1(6),DBL+2
+         MVC   CARD+9(3),=CL3'EQU'
+         MVI   CARD+15,C'*'
+         PUT   OUTDCBW,CARD            WRITE COMMENT START LABEL
+
+         LA    R0,PRT_LINE+41+71       POINT PAST POSSIBLE COMMENT
+         LA    R1,PRT_LINE+41          POINT TO ITEM LABEL
+CMT_LP_1 DC    0H
+         CLI   0(R1),C' '              PAST ITEM LABEL?
+         BE    CMT_LP_2                YES
+         LA    R1,1(,R1)               NO, POINT TO NEXT CHARACTER
+         CR    R1,R0                   REACHED END OF LINE?
+         BL    CMT_LP_1                NO, LOOK AT CHARACTER
+         B     CMT_ITEM                YES, SKIP ITEM COMMENTS
+CMT_LP_2 DC    0H
+         CLI   0(R1),C' '              FOUND STATEMENT VERB?
+         BNE   CMT_LP_3                YES
+         LA    R1,1(,R1)               NO, POINT TO NEXT CHARACTER
+         CR    R1,R0                   REACHED END OF LINE?
+         BL    CMT_LP_2                NO, LOOK AT CHARACTER
+         B     CMT_ITEM                YES, SKIP ITEM COMMENTS
+CMT_LP_3 DC    0H
+         CLI   0(R1),C' '              PAST STATEMENT VERB?
+         BE    CMT_LP_4                YES
+         LA    R1,1(,R1)               NO, POINT TO NEXT CHARACTER
+         CR    R1,R0                   REACHED END OF LINE?
+         BL    CMT_LP_3                NO, LOOK AT CHARACTER
+         B     CMT_ITEM                YES, SKIP ITEM COMMENTS
+CMT_LP_4 DC    0H
+         CLI   0(R1),C' '              FOUND STATEMENT OPERAND?
+         BNE   CMT_LP_5                YES
+         LA    R1,1(,R1)               NO, POINT TO NEXT CHARACTER
+         CR    R1,R0                   REACHED END OF LINE?
+         BL    CMT_LP_4                NO, LOOK AT CHARACTER
+         B     CMT_ITEM                YES, SKIP ITEM COMMENTS
+CMT_LP_5 DC    0H
+         TM    FLAGS1,$QOT             WITHIN QUOTED TEXT?
+         BO    QOT_LP_5                YES
+         CLI   0(R1),C' '              PAST STATEMENT OPERAND(S)?
+         BE    CMT_LP_6                YES
+QOT_LP_5 DC    0H
+         CLI   0(R1),C''''             IS THIS A QUOTE?
+         BNE   NXT_LP_5                NO
+         XI    FLAGS1,$QOT             YES, TOGGLE STATUS
+NXT_LP_5 DC    0H
+         LA    R1,1(,R1)               NO, POINT TO NEXT CHARACTER
+         CR    R1,R0                   REACHED END OF LINE?
+         BL    CMT_LP_5                NO, LOOK AT CHARACTER
+         B     CMT_ITEM                YES, SKIP ITEM COMMENTS
+CMT_LP_6 DC    0H
+         CLI   0(R1),C' '              FOUND A COMMENT OPERAND?
+         BNE   HAVE_CMT                YES
+         LA    R1,1(,R1)               NO, POINT TO NEXT CHARACTER
+         CR    R1,R0                   REACHED END OF LINE?
+         BL    CMT_LP_6                NO, LOOK AT CHARACTER
+         B     CMT_ITEM                YES, SKIP ITEM COMMENTS
+HAVE_CMT DC    0H
+         CLI   0(R1),C'@'              MERELY A CHANGE TAG?
+         BE    CMT_ITEM                YES, SKIP ITEM COMMENTS
+         CLC   =CL2'Y0',0(R1)          MERELY A CHANGE TAG?
+         BE    CMT_ITEM                YES, SKIP ITEM COMMENTS
+         TR    PRT_LINE,DCTR_TAB       REMOVE AMPERSANDS AND QUOTES
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         MVC   CARD+1(5),=CL5'DC C'''  CONSTRUCT DC STATEMENT
+         LA    R14,CARD+6              POINT TO TARGET
+LOAD_CMT DC    0H
+         MVC   0(1,R14),0(R1)          LOAD COMMENT CHARACTER
+         LA    R14,1(,R14)             ADJUST TARGET
+         LA    R1,1(,R1)               ADJUST SOURCE
+         CR    R1,R0                   REACHED END OF LINE?
+         BNL   CMT_LINE                YES
+         CLI   0(R1),C'@'              REACHED CHANGE TAG?
+         BE    CMT_LINE                YES, SKIP ITEM COMMENTS
+         CLC   =CL2'Y0',0(R1)          REACHED CHANGE TAG?
+         BNE   LOAD_CMT                NO, LOAD ANOTHER CHARACTER
+CMT_LINE DC    0H                      COMMENT LINE COMPLETE
+         BCTR  R14,0                   BACK UP ONE CHARACTER
+         CLI   0(R14),C' '             TRAILING BLANK?
+         BE    CMT_LINE                YES, TRUNCATE IT
+         LA    R15,CARD+6              POINT TO TARGET
+         CLR   R14,R15                 ANY YIELD?
+         BNH   CMT_NEXT                NO, IGNORE EMPTY COMMENT LINE
+         MVC   1(7,R14),=CL7''',X''15'''    TERMINATE THE LINE
+         MVC   CARDHOLD,CARD           COPY OUTPUT RECORD
+         CLC   CARD+61(19),CARD+60     11 TRAILING BLANKS?
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         MVC   CARD+9(2),=CL5'DC C'''  CREATE DC STMT (REUSE LITERAL)
+         BE    DO_ALIGN                YES, ALIGN DC DATA NICELY
+         MVC   CARD+15(37),CARDHOLD+4  COPY 35 BYTES OF TEXT
+         MVI   CARD+15+37,C''''        APPEND TRAILING QUOTE
+         PUT   OUTDCBW,CARD            WRITE START OF THE COMMENT LINE
+         MVC   CARD+17(44),CARDHOLD+41 COPY THE REST OF THE TEXT AND NL
+         B     ALIGN_OK                GO WRITE REST OF COMMENT LINE
+DO_ALIGN DC    0H                      COMMENT LINE COMPLETE
+         MVC   CARD+15(65),CARDHOLD+4  COPY CONSTANT (DC OPERAND)
+ALIGN_OK DC    0H                      COMMENT LINE COMPLETE
+         PUT   OUTDCBW,CARD            WRITE THE COMMENT LINE
+
+CMT_NEXT DC    0H                      COMMENT LINE COMPLETE
+         TM    FLAGS1,$EOF             END-OF-FILE REACHED?
+         BO    CMT_ITEM                YES
+         GET   INDCBW,PRT_LINE         GET ASSEMBLER PRINT LINE
+         CLI   PRT_LINE+39,C'0'        IS LINE AN ASSEMBLER STATEMENT?
+         BL    CMT_NEXT                NO, GET NEXT LISTING LINE
+         CLI   PRT_LINE+41,C'*'        IS LINE A SOURCE COMMENT?
+         BNE   CMT_ITEM                NO, END OF COMMENTS FOR ITEM
+         LA    R0,PRT_LINE+41+71       POINT PAST POSSIBLE COMMENT
+         LA    R1,PRT_LINE+41+1        POINT TO POSSIBLE COMMENT
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         B     CMT_LP_6                GO EXTRACT COMMENT
+
+CMT_ITEM DC    0H                      COMMENTS FOR ITEM COMPLETE
+         MVC   CARD,BLANK              BLANK OUTPUT BUFFER
+         MVI   CARD,C'E'               CONSTRUCT COMMENT END LABEL
+         MVC   CARD+1(6),DBL+2
+         MVC   CARD+9(3),=CL3'EQU'
+         MVI   CARD+15,C'*'
+
+DONE_CMT DC    0H
+         PUT   OUTDCBW,CARD
+
+GOT_CMTS DC    0H
+         L     R13,4(,R13)             POINT TO CALLER'S SAVE AREA
+         LM    R14,R12,12(R13)         RESTORE REGISTERS
+         OI    8+3(R13),X'01'          INVALIDATE FORWARD POINTER
+         SR    R15,R15                 ZERO RETURN CODE
+         BR    R14                     RETURN TO CALLER
+
+
+         DROP
+
+         TITLE ' CONSTANTS AND LITERALS '
+         DC    0F
+TWOSYM   EQU   *,4
+         DC    X'02',C'SYM'
+
+         PRINT NOGEN
+
+INDCB1   DCB   DSORG=PS,MACRF=GL,DDNAME=OBJECTIN,EODAD=SYM_EOF
+INDCB1L  EQU   *-INDCB1
+
+INDCB2   DCB   DSORG=PS,MACRF=GM,DDNAME=ASMPRTIN,EODAD=PRT_EOF
+
+OUTDCB   DCB   DSORG=PS,MACRF=PM,DDNAME=PUNCHOUT,RECFM=FB,LRECL=80
+OUTDCBL  EQU   *-OUTDCB
+
+         PRINT GEN
+
+ED7      DC    XL8'4020202020202120'
+HEX      DC    CL16'0123456789ABCDEF'
+
+*              X'00' = C - CHARACTER
+*              X'04' = X - HEXADECIMAL OR PURE DBCS (G-TYPE)
+*              X'08' = B - BINARY
+*              X'10' = F - FIXED POINT, FULL
+*              X'14' = H - FIXED POINT, HALF
+*              X'18' = E - FLOATING POINT, SHORT
+*              X'1C' = D - FLOATING POINT, LONG
+*              X'20' = A - A-TYPE OR Q-TYPE DATA
+*              X'24' = Y - Y-TYPE DATA
+*              X'28' = S - S-TYPE DATA
+*              X'2C' = V - V-TYPE DATA
+*              X'30' = P - PACKED DECIMAL
+*              X'34' = Z - ZONED DECIMAL
+*              X'38' = L - FLOATING POINT, EXTENDED
+DC_TYPES DC    C'CXB?FHEDAYSVPZL'
+
+
+DSECTTBL DC    0F
+         DC    CL10'TTIRLEN 31'
+         DC    CL10'TIVRLEN 34'
+         DC    CL10'TLGRLEN 35'
+$DSECTB# EQU   (*-DSECTTBL)/10
+
+SMF_RTD  DC    C'RECTYPE OFFSET=5,MASK=1,BASE=0,SHIFT=2,LIMIT=0'
+SUB_RTD  DC    C'RECTYPE OFFSET=22,MASK=3,BASE=1,SHIFT=2,LIMIT='
+
+         DC    0D
+         LTORG
+
+         DC    0D
+
+NONHEXTB DC    XL256'FF'               TEST FOR VALID HEX CHARACTERS
+         ORG   NONHEXTB+C'A'
+         DC    XL6'00'
+         ORG   NONHEXTB+C'0'
+         DC    XL10'00'
+         DC    XL6'00'                 HANDLE REPEATED TRANSLATION
+         ORG
+
+HEXCHRTB DC    XL256'00'               HEX CHARACTERS -> NUMERICS
+         ORG   HEXCHRTB+C'A'
+         DC    X'FAFBFCFDFEFF'
+         ORG   HEXCHRTB+C'0'
+         DC    C'0123456789'
+         DC    X'FAFBFCFDFEFF'         HANDLE REPEATED TRANSLATION
+         ORG
+
+DCTR_TAB DC    256AL1(*-DCTR_TAB)      DC CHARACTER DATA VALID CHARS
+         ORG   DCTR_TAB+C'&&'
+         DC    C'+'
+         ORG   DCTR_TAB+C''''
+         DC    C'`'
+         ORG
+
+SKPST_TB EQU   *                       SUBTYPES TO BE SKIPPED
+         DC    CL10'SMF42HDR7 '          42.7
+         DC    CL10'SMF42HDR8 '          42.8
+         DC    CL10'SMF42HDR12'          42.12
+         DC    CL10'SMF42HDR13'          42.13
+         DC    CL10'SMF42HDR14'          42.14
+         DC    CL10'SMF42HDR26'          42.26
+         DC    CL10'SMF79HDR8 '          79.8
+         DC    CL10'SMF79HDR10'          79.10
+         DC    CL10'SMF79HDR13'          79.13
+$SKPST#  EQU   (*-SKPST_TB)/10
+
+
+D_RENAME DC    0F
+         DC    CL10'SMF41RCD  ',CL10'SMFRCD41  ',CL2'  ',Y(0)
+         DC    CL10'S42SNIO   ',CL10'S42SNIO5  ',CL2'  ',Y(0)
+         DC    CL10'S42SNIO   ',CL10'S42SNIO6  ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR1 ',CL2'42',Y(27)
+         DC    CL10'SMF42     ',CL10'SMF42HDR2 ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR3 ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR4 ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR5 ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR6 ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR9 ',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR10',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR11',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR15',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR16',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR17',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR18',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR19',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR20',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR21',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR22',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR23',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR24',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR25',CL2'  ',Y(0)
+         DC    CL10'SMF42     ',CL10'SMF42HDR27',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD1 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD2 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD3 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD4 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD5 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD6 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD9 ',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD10',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD11',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD15',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD16',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD17',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD18',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD19',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD20',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD21',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD22',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD23',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD24',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD25',CL2'  ',Y(0)
+         DC    CL10'SMF42PRD  ',CL10'SMF42PRD27',CL2'  ',Y(0)
+         DC    CL10'SMF70HDR  ',CL10'SMF70HDR1 ',CL2'70',Y(2)
+         DC    CL10'SMF70HDR  ',CL10'SMF70HDR2 ',CL2'  ',Y(0)
+         DC    CL10'SMF70PRO  ',CL10'SMF70PRO1 ',CL2'  ',Y(0)
+         DC    CL10'SMF70PRO  ',CL10'SMF70PRO2 ',CL2'  ',Y(0)
+         DC    CL10'SMF70RHD  ',CL10'SMF70RHD1 ',CL2'  ',Y(0)
+         DC    CL10'SMF70RHD  ',CL10'SMF70RHD2 ',CL2'  ',Y(0)
+         DC    CL10'SMF70RBL  ',CL10'SMF70RBL1 ',CL2'  ',Y(0)
+         DC    CL10'SMF70RBL  ',CL10'SMF70RBL2 ',CL2'  ',Y(0)
+         DC    CL10'SMF71HDR  ',CL10'SMF71HDR1 ',CL2'71',Y(1)
+         DC    CL10'SMF72HDR  ',CL10'SMF72HDR1 ',CL2'72',Y(5)
+         DC    CL10'SMF72HDR  ',CL10'SMF72HDR2 ',CL2'  ',Y(0)
+         DC    CL10'SMF72HDR  ',CL10'SMF72HDR3 ',CL2'  ',Y(0)
+         DC    CL10'SMF72HDR  ',CL10'SMF72HDR4 ',CL2'  ',Y(0)
+         DC    CL10'SMF72HDR  ',CL10'SMF72HDR5 ',CL2'  ',Y(0)
+         DC    CL10'SMF72PRO  ',CL10'SMF72PRO1 ',CL2'  ',Y(0)
+         DC    CL10'SMF72PRO  ',CL10'SMF72PRO2 ',CL2'  ',Y(0)
+         DC    CL10'SMF72PRO  ',CL10'SMF72PRO3 ',CL2'  ',Y(0)
+         DC    CL10'SMF72PRO  ',CL10'SMF72PRO4 ',CL2'  ',Y(0)
+         DC    CL10'SMF72PRO  ',CL10'SMF72PRO5 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RHD  ',CL10'SMF72RHD1 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RHD  ',CL10'SMF72RHD2 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RHD  ',CL10'SMF72RHD3 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RHD  ',CL10'SMF72RHD4 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RHD  ',CL10'SMF72RHD5 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RBL  ',CL10'SMF72RBL1 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RBL  ',CL10'SMF72RBL2 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RBL  ',CL10'SMF72RBL3 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RBL  ',CL10'SMF72RBL4 ',CL2'  ',Y(0)
+         DC    CL10'SMF72RBL  ',CL10'SMF72RBL5 ',CL2'  ',Y(0)
+         DC    CL10'SMF73HDR  ',CL10'SMF73HDR1 ',CL2'73',Y(1)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR1 ',CL2'74',Y(10)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR2 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR3 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR4 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR5 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR6 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR7 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR8 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR9 ',CL2'  ',Y(0)
+         DC    CL10'SMF74HDR  ',CL10'SMF74HDR10',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO1 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO2 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO3 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO4 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO5 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO6 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO7 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO8 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO9 ',CL2'  ',Y(0)
+         DC    CL10'SMF74PRO  ',CL10'SMF74PRO10',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD1 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD2 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD3 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD4 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD5 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD6 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD7 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD8 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD9 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RHD  ',CL10'SMF74RHD10',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL1 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL2 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL3 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL4 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL5 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL6 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL7 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL8 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL9 ',CL2'  ',Y(0)
+         DC    CL10'SMF74RBL  ',CL10'SMF74RBL10',CL2'  ',Y(0)
+         DC    CL10'SMF75HDR  ',CL10'SMF75HDR1 ',CL2'75',Y(1)
+         DC    CL10'SMF76HDR  ',CL10'SMF76HDR1 ',CL2'76',Y(1)
+         DC    CL10'SMF77HDR  ',CL10'SMF77HDR1 ',CL2'77',Y(1)
+         DC    CL10'SMF78HDR  ',CL10'SMF78HDR1 ',CL2'78',Y(3)
+         DC    CL10'SMF78HDR  ',CL10'SMF78HDR2 ',CL2'  ',Y(0)
+         DC    CL10'SMF78HDR  ',CL10'SMF78HDR3 ',CL2'  ',Y(0)
+         DC    CL10'SMF78PRO  ',CL10'SMF78PRO1 ',CL2'  ',Y(0)
+         DC    CL10'SMF78PRO  ',CL10'SMF78PRO2 ',CL2'  ',Y(0)
+         DC    CL10'SMF78PRO  ',CL10'SMF78PRO3 ',CL2'  ',Y(0)
+         DC    CL10'SMF78RHD  ',CL10'SMF78RHD1 ',CL2'  ',Y(0)
+         DC    CL10'SMF78RHD  ',CL10'SMF78RHD2 ',CL2'  ',Y(0)
+         DC    CL10'SMF78RHD  ',CL10'SMF78RHD3 ',CL2'  ',Y(0)
+         DC    CL10'SMF78RBL  ',CL10'SMF78RBL1 ',CL2'  ',Y(0)
+         DC    CL10'SMF78RBL  ',CL10'SMF78RBL2 ',CL2'  ',Y(0)
+         DC    CL10'SMF78RBL  ',CL10'SMF78RBL3 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR1 ',CL2'79',Y(15)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR2 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR3 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR4 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR5 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR6 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR7 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR9 ',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR11',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR12',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR14',CL2'  ',Y(0)
+         DC    CL10'SMF79HDR  ',CL10'SMF79HDR15',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO1 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO2 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO3 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO4 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO5 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO6 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO7 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO9 ',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO11',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO12',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO14',CL2'  ',Y(0)
+         DC    CL10'SMF79PRO  ',CL10'SMF79PRO15',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD1 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD2 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD3 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD4 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD5 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD6 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD7 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD9 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD11',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD12',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD14',CL2'  ',Y(0)
+         DC    CL10'SMF79RHD  ',CL10'SMF79RHD15',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL1 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL2 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL3 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL4 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL5 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL6 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL7 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL9 ',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL11',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL12',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL14',CL2'  ',Y(0)
+         DC    CL10'SMF79RBL  ',CL10'SMF79RBL15',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL1   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL2   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL3   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL4   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL5   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL6   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL7   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL9   ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL11  ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL12  ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL14  ',CL2'  ',Y(0)
+         DC    CL10'R79CHL    ',CL10'R79CHL15  ',CL2'  ',Y(0)
+         DC    CL10'CBRSMF85  ',CL10'SMFRCD85  ',CL2'  ',Y(0)
+$D_RENLN EQU   24
+$D_RENCT EQU   (*-D_RENAME)/$D_RENLN
+
+
+*   SECNAMES FLAG BYTE BIT ASSIGNMENTS:
+*          1... ....  - LAST SECTION ENTRY FOR RECORD
+*          .1.. ....  - INSTANCES OF THIS SECTION ARE CHAINED
+*          ..1. ....  - ACTUAL SECTION LENGTH BYTE COUNT FOLLOWS
+*          ...1 ....  - OFFSET BASED ON INDEX SECTION, NOT RECORD
+*          .... 1...  - TRIPLET ORDER IS OFFSET, COUNT, LENGTH
+*          .... .1..  - SECTION OFFSET IS 4 BYTES IN SIZE
+*          .... ..1.  - 2-BYTE SECTION LENGTH FOLLOWS 4-BYTE OFFSET
+*          .... ...1  - 2-BYTE SECTION COUNT FOLLOWS 2-BYTE LENGTH
+*          .... 01.0  - NON-ZERO OFFSET INDICATES SECTION EXISTENCE
+*
+*   THE NEXT BYTE CONTAINS THE LEVEL OF THIS SECTION, WHICH IS THE
+*   LEVEL OF THE SECTION WHICH CONTAINS THIS SECTION'S DESCRIPTOR
+*   INCREMENTED BY ONE.  IF A SECTION IS NOT PRESENT, THE NEXT
+*   SECTION TO LOOK AT IS THE NEXT SECTION AT THE SAME (OR LOWER)
+*   LEVEL OF THE ABSENT SECTION.
+*
+*   A COUNT BACK VALUE OF ZERO MEANS THAT THE 2-BYTE OFFSET IS AT
+*   THE RECORD OFFSET CONTAINED IN THE LAST 2 BYTES OF THE ENTRY.
+*   IF THE LAST 2 ENTRY BYTES ARE ALSO ZERO, THE RDW IS INDICATED.
+*
+*   LAST 2 BYTES OF ENTRY ARE SECTION OFFSET OF 2-BYTE LENGTH
+*   - ZERO ENTRY => LENGTH IN FIRST 2 BYTES OF RDW
+*   - TRIPLET TYPE => OFFSET REFERS TO BASE SECTION
+SECNAMES DC    0F
+$SECNMLN EQU   16          ENTRY LENGTH
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 30 - ALL SUBTYPES
+    DC    CL12'SMFRCD30    ',X'0000',Y(026)  SMF30SOF+2
+    DC    CL12'SMF30PSS    ',X'0701',Y(024)  SMF30SOF  SUBSYS
+    DC    CL12'SMF30ID     ',X'0701',Y(032)  SMF30IOF  ID
+    DC    CL12'SMF30URA    ',X'0701',Y(040)  SMF30UOF  I/O ACTIVITY
+    DC    CL12'SMF30CMP    ',X'0701',Y(048)  SMF30TOF  COMPLETION
+    DC    CL12'SMF30CAS    ',X'0701',Y(056)  SMF30COF  CPU ACCOUNTING
+    DC    CL12'SMF30SAP    ',X'0701',Y(072)  SMF30ROF  STORAGE
+    DC    CL12'SMF30PRF    ',X'0701',Y(080)  SMF30POF  PERFORMANCE
+    DC    CL12'SMF30OPS    ',X'0701',Y(088)  SMF30OOF  OPERATOR
+    DC    CL12'SMF30ACS    ',X'0701',Y(064)  SMF30AOF  ACCOUNTING
+    DC    CL12'SMF30EXP    ',X'0701',Y(096)  SMF30EOF  EXCP
+    DC    CL12'SMF30AR     ',X'0701',Y(120)  SMF30ARO  APPC/MVS CUM
+    DC    CL12'SMF30DR     ',X'0701',Y(112)  SMF30DRO  APPC/MVS
+    DC    CL12'SMF30OP     ',X'0701',Y(128)  SMF30OPO  UNIX PROCESS
+    DC    CL12'SMF30RM     ',X'0701',Y(152)  SMF30RMO  AUTO RESTART
+    DC    CL12'SMF30UD     ',X'0701',Y(140)  SMF30UDO  PRODUCT USAGE
+    DC    CL12'SMF30MSE    ',X'0701',Y(164)  SMF30MOF  MULTISYS ENCLAVE
+    DC    CL12'SMF30CDS    ',X'0701',Y(176)  SMF30CDO  COUNTER
+    DC    CL12'SMF30USS    ',X'8701',Y(184)  SMF30USO  ZEDC USAGE
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 42 - SUBTYPE 1
+    DC    CL12'SMF42HDR1   ',X'2000',Y(036)  36 BYTES
+    DC    CL12'SMF42S1     ',X'2000',Y(016)  16 BYTES  BMF STATS
+    DC    CL12'SMF42PRD1   ',X'0701',Y(028)  SMF42OPS  PRODUCT
+    DC    CL12'SMF4201A    ',X'0701',Y(036)  SMF42BMO  BMF TOTALS
+    DC    CL12'SMF4201B    ',X'8701',Y(044)  SMF42SCO  STORCLAS SMRY
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 42 - SUBTYPE 2
+    DC    CL12'SMF42HDR2   ',X'2000',Y(036)  36 BYTES
+    DC    CL12'SMF42S2     ',X'2000',Y(016)  16 BYTES  CACHE SMRY
+    DC    CL12'SMF42PRD2   ',X'0701',Y(028)  SMF42OPS  PRODUCT
+    DC    CL12'SMF4202A    ',X'0701',Y(036)  SMF42CUO  CU CACHE
+    DC    CL12'SMF4202B    ',X'8701',Y(044)  SMF42VLO  VOLUME
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 42 - SUBTYPE 3
+    DC    CL12'SMF42HDR3   ',X'2000',Y(036)  36 BYTES
+    DC    CL12'SMF42S3     ',X'2000',Y(008)   8 BYTES  CONFIG. AUDIT
+    DC    CL12'SMF42PRD3   ',X'0701',Y(028)  SMF42OPS  PRODUCT
+    DC    CL12'SMF4203A    ',X'8701',Y(036)  SMF42EAO  EVENT AUDIT
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 42 - SUBTYPE 4
+    DC    CL12'SMF42HDR4   ',X'2000',Y(036)  36 BYTES
+    DC    CL12'SMF42S4     ',X'2000',Y(016)  24 BYTES  DATA MOVER
+    DC    CL12'SMF42PRD4   ',X'0701',Y(028)  SMF42OPS  PRODUCT
+    DC    CL12'SMF4204C    ',X'0701',Y(036)  SMF42CCO  CC STATS
+    DC    CL12'S42CSIDH    ',X'0F02',Y(048)  S42CCSSO  CC SSID HDR
+    DC    CL12'S42CVL      ',X'0F03',Y(012)  S42CSVLO  CC VOLUME
+    DC    CL12'SMF4204E    ',X'0701',Y(044)  SMF42EXO  VOLUME
+    DC    CL12'SMF4204V    ',X'0701',Y(052)  SMF42VCO  EAV/VCC STATS
+    DC    CL12'S42VSIDH    ',X'0F02',Y(072)  S42VCSSO  SSID HEADER
+    DC    CL12'S42VVL      ',X'8F03',Y(020)  S42VSVLO  EAV CC VOLUME
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 42 - SUBTYPE 5
+    DC    CL12'SMF42HDR5   ',X'2000',Y(036)  36 BYTES
+    DC    CL12'SMF42S5     ',X'2000',Y(016)  16 BYTES  STOCLS RSP TM
+    DC    CL12'SMF42PRD5   ',X'0701',Y(028)  SMF42OPS  PRODUCT
+    DC    CL12'SMF4205A    ',X'0701',Y(036)  SMF42SRO  S.C. RESP TIME
+    DC    CL12'SMF4205B    ',X'0701',Y(044)  SMF42VHO  VOLUME HEADER
+    DC    CL12'SMF4205C    ',X'0602',Y(024)  S42VTVDO  VTOC DATA
+    DC    CL12'SMF4205D    ',X'0602',Y(032)  S42VTVXO  VTOC INDEX
+    DC    CL12'SMF4205E    ',X'0602',Y(040)  S42VTVVO  VVDS
+    DC    CL12'SMF4205F    ',X'0702',Y(048)  S42VTMCO  VOLUME METRICS
+    DC    CL12'SMF4205H    ',X'0702',Y(056)  S42VTSYO  SYSTEM I/O
+    DC    CL12'SMF4205I    ',X'0703',Y(000)  S42VSYO1  SYSTEM I/O
+    DC    CL12'SMF4205J    ',X'0703',Y(008)  S42VSYO2  SYS I/O HI RESP
+    DC    CL12'SMF4205O    ',X'0701',Y(064)  S42VTBGO  VOLUME BKGND
+    DC    CL12'SMF4205P    ',X'0701',Y(000)  S42VBGO1  BKGD STATS ACT
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 42 - SUBTYPE 6
+    DC    CL12'SMF42HDR6   ',X'2000',Y(036)  36 BYTES
+    DC    CL12'SMF42S6     ',X'2000',Y(008)  16 BYTES  JOB/DSET STATS
+    DC    CL12'SMF42PRD6   ',X'0701',Y(028)  SMF42OPS  PRODUCT
+    DC    CL12'SMF4206A    ',X'0701',Y(036)  SMF42JHO  JOB HEADER
+    DC    CL12'S42DSH      ',X'4602',Y(024)  S42JDDSO  DATA SET HEADER
+    DC    CL12'S42DSIO     ',X'0403',Y(052)  S42DSIOO  DATA SET I/O
+    DC    CL12'S42DSAM     ',X'0403',Y(056)  S42DSAMO  ACCESS METHOD
+    DC    CL12'S42SNIO     ',X'0603',Y(088)  S42DSSNO  SYNC I/O
+    DC    CL12'S42SNTW     ',X'0602',Y(096)  S42DSS2O  SYNC I/O 2
+    DC    CL12'S42SNDW     ',X'8602',Y(104)  S42DSS3O  SYNC I/O 3
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 70 - SUBTYPE 1
+    DC    CL12'SMF70HDR1   ',X'0000',Y(030)  SMF70PRS+2
+    DC    CL12'SMF70PRO1   ',X'0701',Y(028)  SMF70PRS  PRODUCT
+    DC    CL12'SMF70RHD1   ',X'0702',Y(068)  SMF70RAO  REASSEMBLY HDR
+    DC    CL12'SMF70RBL1   ',X'0703',Y(004)  SMF70RIO  REASSEMBLY INFO
+    DC    CL12'SMF70CTL    ',X'0701',Y(036)  SMF70CCS  CPU CONTROL
+    DC    CL12'SMF70CPU    ',X'0701',Y(044)  SMF70CPS  CPU DATA
+    DC    CL12'SMF70AID    ',X'0701',Y(052)  SMF70ASS  ASID DATA
+    DC    CL12'SMF70BCT    ',X'0701',Y(060)  SMF70BCS  PR/SM PARTITION
+    DC    CL12'SMF70BPD    ',X'0701',Y(068)  SMF70BVS  PR/SM PROCESSOR
+    DC    CL12'SMF70CIS    ',X'0701',Y(076)  SMF70CNS  CPU-ID NAME
+    DC    CL12'SMF70LCS    ',X'0701',Y(084)  SMF70COS  LOGICAL CORE
+    DC    CL12'SMF70TNT    ',X'8701',Y(092)  SMF70TNS  TENANT RESOURCE
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 70 - SUBTYPE 2
+    DC    CL12'SMF70HDR2   ',X'0000',Y(030)  SMF70PRS+2
+    DC    CL12'SMF70PRO2   ',X'0701',Y(028)  SMF70PRS  PRODUCT
+    DC    CL12'SMF70RHD2   ',X'0702',Y(068)  SMF70RAO  REASSEMBLY HDR
+    DC    CL12'SMF70RBL2   ',X'0703',Y(004)  SMF70RIO  REASSEMBLY INFO
+    DC    CL12'R702TYP3    ',X'0701',Y(036)  SMF7023S  CCA COPROCESSOR
+    DC    CL12'R702TYP4    ',X'0701',Y(044)  SMF7024S  ACCELERATOR
+    DC    CL12'R702CCF     ',X'0701',Y(052)  SMF702CS  ICSF
+    DC    CL12'R702TYP5    ',X'8701',Y(060)  SMF7025S  PKCS11 COPROC.
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 71 - SUBTYPE 1
+    DC    CL12'SMF71HDR1   ',X'0000',Y(030)  SMF71PRS+2
+    DC    CL12'SMF71PRO    ',X'0701',Y(028)  SMF71PRS  PRODUCT
+    DC    CL12'SMF71RHD    ',X'0702',Y(068)  SMF71RAO  REASSEMBLY HDR
+    DC    CL12'SMF71RBL    ',X'0703',Y(004)  SMF71RIO  REASSEMBLY INFO
+    DC    CL12'SMF71PAG    ',X'0701',Y(036)  SMF71PDS  PAGING DATA
+    DC    CL12'SMF71SWP    ',X'8701',Y(044)  SMF71SWS  SWAP PLACEMENT
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 72 - SUBTYPE 1
+    DC    CL12'SMF72HDR1   ',X'0000',Y(030)  SMF72PRS+2
+    DC    CL12'SMF72PRO1   ',X'0701',Y(028)  SMF72PRS  PRODUCT
+    DC    CL12'SMF72RHD1   ',X'0702',Y(068)  SMF72RAO  REASSEMBLY HDR
+    DC    CL12'SMF72RBL1   ',X'0703',Y(004)  SMF72RIO  REASSEMBLY INFO
+    DC    CL12'SMF72CTL    ',X'0701',Y(036)  SMF72WLS  WRKLD CONTROL
+    DC    CL12'SMF72WKL    ',X'8701',Y(044)  SMF72PGS  PERF GRP PERIOD
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 72 - SUBTYPE 2
+    DC    CL12'SMF72HDR2   ',X'0000',Y(030)  SMF72PRS+2
+    DC    CL12'SMF72PRO2   ',X'0701',Y(028)  SMF72PRS  PRODUCT
+    DC    CL12'SMF72RHD2   ',X'0702',Y(068)  SMF72RAO  REASSEMBLY HDR
+    DC    CL12'SMF72RBL2   ',X'0703',Y(004)  SMF72RIO  REASSEMBLY INFO
+    DC    CL12'R722WKL     ',X'0701',Y(036)  SMF72WLS  WRKLD CONTROL
+    DC    CL12'R722DATA    ',X'0701',Y(044)  SMF72PGS  WORKLD DATA
+    DC    CL12'R722SWRE    ',X'8701',Y(052)  SMF70SWS  SWAP REASONS
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 72 - SUBTYPE 3
+    DC    CL12'SMF72HDR3   ',X'0000',Y(030)  SMF72PRS+2
+    DC    CL12'SMF72PRO3   ',X'0701',Y(028)  SMF72PRS  PRODUCT
+    DC    CL12'SMF72RHD3   ',X'0702',Y(068)  SMF72RAO  REASSEMBLY HDR
+    DC    CL12'SMF72RBL3   ',X'0703',Y(004)  SMF72RIO  REASSEMBLY INFO
+    DC    CL12'R723WMS     ',X'0701',Y(036)  SMF72WMS  WRKLD CONTROL
+    DC    CL12'R723SSS     ',X'0701',Y(044)  SMF72SSS  SERVICE CLASSES
+    DC    CL12'R723RGS     ',X'0701',Y(052)  SMF72RGS  RESOURCE GROUPS
+    DC    CL12'R723SCS     ',X'0701',Y(060)  SMF72SCS  PERIOD DATA
+    DC    CL12'R723RTS     ',X'0701',Y(068)  SMF72RTS  RESPONSE TIME
+    DC    CL12'R723WRS     ',X'0701',Y(076)  SMF72WRS  WORK/RESOURCE
+    DC    CL12'R723DNS     ',X'8701',Y(084)  SMF72DNS  RESPONSE DELAY
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 72 - SUBTYPE 4
+    DC    CL12'SMF72HDR4   ',X'0000',Y(030)  SMF72PRS+2
+    DC    CL12'SMF72PRO4   ',X'0701',Y(028)  SMF72PRS  PRODUCT
+    DC    CL12'SMF72RHD4   ',X'0702',Y(068)  SMF72RAO  REASSEMBLY HDR
+    DC    CL12'SMF72RBL4   ',X'0703',Y(004)  SMF72RIO  REASSEMBLY INFO
+    DC    CL12'R724DATA    ',X'0701',Y(036)  SMF72WMS  WRKLD CONTROL
+    DC    CL12'R724SWRE    ',X'0701',Y(044)  SMF72SSS  SERVICE CLASSES
+    DC    CL12'R724SCTL    ',X'0701',Y(052)  SMF72RGS  RESOURCE GROUPS
+    DC    CL12'R724SCS     ',X'0701',Y(060)  SMF72SCS  PERIOD DATA
+    DC    CL12'R724RTS     ',X'0701',Y(068)  SMF72RTS  RESPONSE TIME
+    DC    CL12'R724WRS     ',X'0701',Y(076)  SMF72WRS  WORK/RESOURCE
+    DC    CL12'R724DNS     ',X'8701',Y(084)  SMF72DNS  RESPONSE DELAY
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 72 - SUBTYPE 5
+    DC    CL12'SMF72HDR5   ',X'0000',Y(030)  SMF72PRS+2
+    DC    CL12'SMF72PRO5   ',X'0701',Y(028)  SMF72PRS  PRODUCT
+    DC    CL12'SMF72RHD5   ',X'0702',Y(068)  SMF72RAO  REASSEMBLY HDR
+    DC    CL12'SMF72RBL5   ',X'0703',Y(004)  SMF72RIO  REASSEMBLY INFO
+    DC    CL12'R725SCTL    ',X'0701',Y(036)  SMF72SES  SERIALIZATION
+    DC    CL12'R725CMSD    ',X'0701',Y(044)  SMF72CMS  CMS LOCK DATA
+    DC    CL12'R725CMSD    ',X'0701',Y(052)  SMF72EDS  CMS ENQ/DEQ
+    DC    CL12'R725CMSD    ',X'0701',Y(060)  SMF72LAS  CMS LATCH LOCK
+    DC    CL12'R725CMSD    ',X'0701',Y(068)  SMF72SMS  CMS SMF LOCK
+    DC    CL12'R725LOTD    ',X'0701',Y(076)  SMF72LOS  LOCAL LOCK DATA
+    DC    CL12'R725CLOD    ',X'0701',Y(084)  SMF72COS  CML LOCK OWNER
+    DC    CL12'R725CLRD    ',X'0701',Y(092)  SMF72CRS  CML LOCK REQSTR
+    DC    CL12'R725LATD    ',X'0701',Y(100)  SMF72LCS  GRS LATCH SET
+    DC    CL12'R725LATD    ',X'0701',Y(108)  SMF72LRS  GRS LATCH REQST
+    DC    CL12'R725ENTD    ',X'0701',Y(116)  SMF72TDS  GRS ENQ STEP
+    DC    CL12'R725ENTD    ',X'0701',Y(124)  SMF72YDS  GRS ENQ SYSTEM
+    DC    CL12'R725ENTD    ',X'0701',Y(132)  SMF72SDS  GRS ENQ SYSTEMS
+    DC    CL12'R725QSAD    ',X'8701',Y(140)  SMF72QSS  GRS QSCAN DATA
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 73 - SUBTYPE 1
+    DC    CL12'SMF73HDR1   ',X'0000',Y(030)  SMF73PRS+2
+    DC    CL12'SMF73PRO    ',X'0701',Y(028)  SMF73PRS  PRODUCT
+    DC    CL12'SMF73RHD    ',X'0702',Y(068)  SMF73RAO  REASSEMBLY HDR
+    DC    CL12'SMF73RBL    ',X'0703',Y(004)  SMF73RIO  REASSEMBLY INFO
+    DC    CL12'SMF73CTL    ',X'0701',Y(036)  SMF73HIS  CHANNEL CONTROL
+    DC    CL12'SMF73CHA    ',X'0701',Y(044)  SMF73HPS  CHANNEL DATA
+    DC    CL12'SMF73ECD    ',X'8701',Y(052)  SMF73HES  EXTENDED DATA
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 74 - SUBTYPE 1
+    DC    CL12'SMF74HDR1   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO1   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD1   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL1   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'SMF74A      ',X'0701',Y(036)  SMF74DCS  DEVICE CONTROL
+    DC    CL12'SMF74B      ',X'8701',Y(044)  SMF74DDS  DEVICE DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 2
+    DC    CL12'SMF74HDR2   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO2   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD2   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL2   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R742CNTL    ',X'0701',Y(036)  SMF742CO  CONTROL DATA
+    DC    CL12'R742SYS     ',X'0701',Y(044)  SMF742SO  SYSTEM DATA
+    DC    CL12'R742PTH     ',X'0701',Y(036)  SMF742PO  PATH DATA
+    DC    CL12'R742MBR     ',X'8701',Y(044)  SMF742MO  MEMBER DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 3
+    DC    CL12'SMF74HDR3   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO3   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD3   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL3   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R743DATA    ',X'8701',Y(036)  SMF743PO  DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 4
+    DC    CL12'SMF74HDR4   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO4   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD4   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL4   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R744FLCF    ',X'0701',Y(036)  SMF744FO  LOCAL CF DATA
+    DC    CL12'R744XCON    ',X'0701',Y(044)  SMF744XO  CONN. CF DATA
+    DC    CL12'R744GSRG    ',X'0701',Y(052)  SMF744GO  STOR. CF DATA
+    DC    CL12'R744QSDS    ',X'0701',Y(060)  SMF744QO  STRUCT. CF DATA
+    DC    CL12'R744SREQ    ',X'0701',Y(068)  SMF744SO  REQUEST CF DATA
+    DC    CL12'R744PROC    ',X'0701',Y(076)  SMF744PO  PROCES. CF DATA
+    DC    CL12'R744CACH    ',X'0701',Y(084)  SMF744CO  CF CACHE DATA
+    DC    CL12'R744CFRF    ',X'0701',Y(092)  SMF744RO  CF REMOTE FACIL
+    DC    CL12'R744CHPA    ',X'0701',Y(100)  SMF744HO  CF CHPID DATA
+    DC    CL12'R744MSCM    ',X'0701',Y(108)  SMF744MO  CF SCM DATA
+    DC    CL12'R744ADUP    ',X'8701',Y(116)  SMF744AO  ASYNC CF DUPLEX
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 5
+    DC    CL12'SMF74HDR5   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO5   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD5   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL5   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R745CNTL    ',X'0701',Y(036)  SMF745CO  CONTROL DATA
+    DC    CL12'R745DEV     ',X'0701',Y(044)  SMF745DO  CACHE DEV DATA
+    DC    CL12'R745XDEV    ',X'0701',Y(052)  SMF745XO  CACHE DEV EXTN
+    DC    CL12'R7451DEV    ',X'0701',Y(060)  SMF745SO  CACHE STAT. DATA
+    DC    CL12'R745STAT    ',X'8701',Y(068)  SMF7451O  RAID RANK DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 6
+    DC    CL12'SMF74HDR6   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO6   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD6   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL6   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R746GDAT    ',X'0701',Y(036)  SMF746DO  GLOBAL DATA
+    DC    CL12'R746GBUF    ',X'0701',Y(044)  SMF746BO  GLOBAL BUFFER
+    DC    CL12'R746FSYS    ',X'8701',Y(052)  SMF746FO  FILE SYSTEM
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 7
+    DC    CL12'SMF74HDR7   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO7   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD7   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL7   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R747GDAT    ',X'0701',Y(036)  SMF747GO  GLOBAL DATA
+    DC    CL12'R747SDAT    ',X'0701',Y(044)  SMF747SO  SWITCH DATA
+    DC    CL12'R747PDAT    ',X'0701',Y(052)  SMF747PO  PORT DATA
+    DC    CL12'R747CDAT    ',X'8701',Y(060)  SMF747CO  CONNECTOR DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 8
+    DC    CL12'SMF74HDR8   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO8   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD8   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL8   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R748CNTL    ',X'0701',Y(036)  SMF748CO  LINK STATS CNTL
+    DC    CL12'R748LSS     ',X'0701',Y(044)  SMF748LO  LINK STATS DATA
+    DC    CL12'R748EXTP    ',X'0701',Y(052)  SMF748XO  EXTENT POOL DATA
+    DC    CL12'R748RANK    ',X'0701',Y(060)  SMF748RO  RANK STATS DATA
+    DC    CL12'R748RANK    ',X'0701',Y(068)  SMF748AO  RANK ARRAY DATA
+    DC    CL12'R748SIOL    ',X'8701',Y(076)  SMF748SO  SYNC I/O LINK
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 9
+    DC    CL12'SMF74HDR9   ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO9   ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD9   ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL9   ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R749PF      ',X'0701',Y(036)  SMF749PO  PCIE FUNC. DATA
+    DC    CL12'R749DMA     ',X'0701',Y(044)  SMF749DO  PCIE FUNC. TYPE
+    DC    CL12'R749HWA     ',X'0701',Y(052)  SMF749FO  HW ACCELERATOR
+    DC    CL12'R749HWA1    ',X'0701',Y(060)  SMF7491O  HWA COMPRESSION
+    DC    CL12'R749SYNC    ',X'0701',Y(068)  SMF749SO  SYNCH I/O LINK
+    DC    CL12'R749SRTD    ',X'8701',Y(076)  SMF749RO  SYNCH I/O RTD
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 74 - SUBTYPE 10
+    DC    CL12'SMF74HDR10  ',X'0000',Y(030)  SMF74PRS+2
+    DC    CL12'SMF74PRO10  ',X'0701',Y(028)  SMF74PRS  PRODUCT
+    DC    CL12'SMF74RHD10  ',X'0702',Y(068)  SMF74RAO  REASSEMBLY HDR
+    DC    CL12'SMF74RBL10  ',X'0703',Y(004)  SMF74RIO  REASSEMBLY INFO
+    DC    CL12'R7410CM     ',X'0701',Y(036)  SMF74DCS  DEVICE CONTROL
+    DC    CL12'R7410DI     ',X'8701',Y(044)  SMF74DDS  DEVICE DATA
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 75 - SUBTYPE 1
+    DC    CL12'SMF75HDR1   ',X'0000',Y(030)  SMF75PRS+2
+    DC    CL12'SMF75PRO    ',X'0701',Y(028)  SMF75PRS  PRODUCT
+    DC    CL12'SMF75RHD    ',X'0702',Y(068)  SMF75RAO  REASSEMBLY HDR
+    DC    CL12'SMF75RBL    ',X'0703',Y(004)  SMF75RIO  REASSEMBLY INFO
+    DC    CL12'SMF75PSD    ',X'8701',Y(036)  SMF75PSS  PAGE DATA
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 76 - SUBTYPE 1
+    DC    CL12'SMF76HDR1   ',X'0000',Y(030)  SMF76PRS+2
+    DC    CL12'SMF76PRO    ',X'0701',Y(028)  SMF76PRS  PRODUCT
+    DC    CL12'SMF76RHD    ',X'0702',Y(068)  SMF76RAO  REASSEMBLY HDR
+    DC    CL12'SMF76RBL    ',X'0703',Y(004)  SMF76RIO  REASSEMBLY INFO
+    DC    CL12'SMF76A      ',X'0701',Y(036)  SMF76TCS  TRACE CONTROL
+    DC    CL12'SMF76B      ',X'0701',Y(044)  SMF76TDS  TRACE DATA ENTRY
+    DC    CL12'SMF76C      ',X'8701',Y(052)  SMF76VFS  VAR. FORMAT SET
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 77 - SUBTYPE 1
+    DC    CL12'SMF77HDR    ',X'0000',Y(030)  SMF77PRS+2
+    DC    CL12'SMF77PRO    ',X'0701',Y(028)  SMF77PRS  PRODUCT
+    DC    CL12'SMF77RHD    ',X'0702',Y(068)  SMF77RAO  REASSEMBLY HDR
+    DC    CL12'SMF77RBL    ',X'0703',Y(004)  SMF77RIO  REASSEMBLY INFO
+    DC    CL12'SMF77CTL    ',X'0701',Y(036)  SMF77EQS  ENQUEUE CONTROL
+    DC    CL12'SMF77ENQ    ',X'8701',Y(044)  SMF77EDS  ENQUEUE DATA
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  TYPE 78 - SUBTYPE 1
+    DC    CL12'SMF78HDR1   ',X'0000',Y(030)  SMF78PRS+2
+    DC    CL12'SMF78PRO1   ',X'0701',Y(028)  SMF78PRS  PRODUCT
+    DC    CL12'SMF78RHD1   ',X'0702',Y(068)  SMF78RAO  REASSEMBLY HDR
+    DC    CL12'SMF78RBL1   ',X'0703',Y(004)  SMF78RIO  REASSEMBLY INFO
+    DC    CL12'R781CC      ',X'0701',Y(036)  SMF78DCS  IOQ CONFIG CNTL
+    DC    CL12'R781CPD     ',X'0703',Y(004)  R781CPDS  IOQ CONFIG DATA
+    DC    CL12'R781DS      ',X'8701',Y(044)  SMF78ASS  IO QUEUING DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 78 - SUBTYPE 2
+    DC    CL12'SMF78HDR2   ',X'0000',Y(030)  SMF78PRS+2
+    DC    CL12'SMF78PRO2   ',X'0701',Y(028)  SMF78PRS  PRODUCT
+    DC    CL12'SMF78RHD2   ',X'0702',Y(068)  SMF78RAO  REASSEMBLY HDR
+    DC    CL12'SMF78RBL2   ',X'0703',Y(004)  SMF78RIO  REASSEMBLY INFO
+    DC    CL12'R782COMN    ',X'0701',Y(036)  SMF78DCS  IOQ CONFIG CNTL
+    DC    CL12'R782PVT     ',X'0701',Y(044)  SMF78ASS  IOQ CONFIG DATA
+    DC    CL12'R782PVSP    ',X'8701',Y(052)  SMF78SPS  IO QUEUING DATA
+*  -  -  -  -  -  -  -  -  -  -  -  -  -  -  TYPE 78 - SUBTYPE 3
+    DC    CL12'SMF78HDR3   ',X'0000',Y(030)  SMF78PRS+2
+    DC    CL12'SMF78PRO3   ',X'0701',Y(028)  SMF78PRS  PRODUCT
+    DC    CL12'SMF78RHD3   ',X'0702',Y(068)  SMF78RAO  REASSEMBLY HDR
+    DC    CL12'SMF78RBL3   ',X'0703',Y(004)  SMF78RIO  REASSEMBLY INFO
+    DC    CL12'R783CS      ',X'0702',Y(036)  SMF78DCS  QUEUING CNTL
+    DC    CL12'R783CPD     ',X'0703',Y(004)  R783CPDS  IOQ CONFIG DATA
+    DC    CL12'R783DS      ',X'0701',Y(044)  SMF78ASS  QUEUING DATA
+    DC    CL12'R783GD      ',X'0702',Y(052)  SMF78QDS  IOQ GLOBAL
+    DC    CL12'R783IQD     ',X'0703',Y(004)  R783GIDS  IOP INIT Q & UTL
+    DC    CL12'R783HPAV    ',X'8701',Y(060)  SMF78HPS  HYPER/SUPERPAV
+*  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =  =
+$SECNM#  EQU   (*-SECNAMES)/$SECNMLN
+
+
+         DC    0D
+         DC    CL16' END OF REVEXSYM'
+
+         TITLE ' WORKING STORAGE '
+WORKAREA DSECT
+SAVE1    DS    18F
+SAVE2    DS    18F
+DBL      DS    D
+
+CRNTDSCT DS    CL8
+CRNTOFST DS    F
+ITEM_NUM DS    PL4
+SYMIN_CT DS    F
+SYM_CSR  DS    A
+FLAGS1   DS    XL1                     PROGRAM FLAGS
+$EOF     EQU   X'80'                   ASMPRTIN DD EOF
+$QOT     EQU   X'40'                   WITHIN QUOTED TEXT
+$CSTT    EQU   X'20'                   CREATE SUBTYPE FILTER TABLE
+FLAGS2   DS    XL1                     SECTION FLAGS
+FLAGS3   DS    XL1                     ITEM FLAGS
+$BINTOD  EQU   X'80'
+BLANK    DS    CL1
+CARD     DS    CL90
+DSCTCARD DS    CL90
+CARDHOLD DS    CL90
+PRT_LINE DS    CL256
+
+         DS    0F
+INDCBW   DS    XL(INDCB1L)
+         DS    0F
+OUTDCBW  DS    XL(OUTDCBL)
+
+SYM_DATA DS    0D
+         ORG   WORKAREA+(512*1024)
+
+         DS    0D
+$WORKLEN EQU   *-WORKAREA
+
+         END   REVEXSYM

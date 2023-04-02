@@ -1,0 +1,429 @@
+//GREGS    JOB (),G.PRICE,CLASS=A,MSGCLASS=X,MSGLEVEL=(1,1),
+//             NOTIFY=&SYSUID,REGIONX=(4M,1G),COND=(0,NE)
+/*JOBPARM L=200
+//*
+//*REPARE EXEC PGM=IEFBR14
+//*SMPRT   DD  DSN=GREG.ASMPRT,DISP=(MOD,DELETE),
+//*            UNIT=3390,SPACE=(TRK,0)
+//*
+//ASMSMF  EXEC PGM=ASMA90,PARM='TERM,NODECK,OBJECT,LC(150),BATCH,TEST'
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  DSN=GREG.ASMPRT,DISP=SHR
+//* SPRINT DD  DSN=GREG.ASMPRT,DISP=(NEW,CATLG),UNIT=3390,
+//*            SPACE=(TRK,(50,50),RLSE),DSORG=PS,RECFM=FBA,LRECL=121
+//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR
+//         DD  DSN=SYS1.MODGEN,DISP=SHR
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(10,2))
+//SYSLIN   DD  DSN=GREG.FB80.DATA,DISP=SHR
+//SYSIN    DD  *
+         IFASMFR 0                                             IFASMFR
+         END
+         IFASMFR 2                                             IFASMFR
+         END
+         IFASMFR 3                                             IFASMFR
+         END
+         IFASMFR 4                                             IFASMFR
+         END
+         IFASMFR 5                                             IFASMFR
+         END
+         IFASMFR 6                                             IFASMFR
+         END
+         IFASMFR 7                                             IFASMFR1
+         END
+         IFASMFR 8                                             IFASMFR1
+         END
+         IFASMFR 9                                             IFASMFR1
+         END
+         IFASMFR 10                                            IFASMFR1
+         END
+         IFASMFR 11                                            IFASMFR1
+         END
+         IFASMFR 14  DFP                                       IFGSMF14
+         END
+         IFASMFR 17  DFP                                       IGGSMF17
+         END
+         IFASMFR 18  DFP                                       IGGSMF18
+         END
+         IFASMFR 19  DFP                                       IGGSMF19
+         END
+         IFASMFR 20                                            IFASMFR2
+         END
+         IFASMFR 21  DFP                                       IGESMF21
+         END
+         IFASMFR 22                                            IFASMFR2
+         END
+         IFASMFR 23                                            IFASMFR2
+         END
+         IAZSMFR 24                                            IFASMFR2
+         END
+         IAZSMFR 25                                            IFASMFR2
+         END
+         IAZSMFR 26                                            IFASMFR2
+         END
+         IFASMFR 30                                            IFASMFR3
+         END
+         IFASMFR 31                                            IFASMFR3
+         END
+         IFASMFR 32                                            IFASMFR3
+         END
+         IFASMFR 33                                            IFASMFR3
+         END
+         IFASMFR 34                                            IFASMFR3
+         END
+         IFASMFR 35                                            IFASMFR3
+         END
+**       IFASMFR 37  NETWORK PROBLEM DETERMIN~N APPL~N (NPDA)  BNJTBRF
+**       END
+**       IFASMFR 39  NETWORK LOGICAL DATA MANAGER (NLDM)       AAUTLOGR
+**       END
+         IFASMFR 40                                            IFASMFR4
+         END
+         IFASMFR 41                                            ITVSMF41
+         END
+         IGWSMF SMF42_01=YES         DEVICE STATISTICS
+         END
+         IGWSMF SMF42_02=YES         SMS DASD CONTROL UNIT
+         END
+         IGWSMF SMF42_03=YES         SMS CONFIGURATION CHANGE
+         END
+         IGWSMF SMF42_04=YES         SYSTEM DATA MOVER
+         END
+         IGWSMF SMF42_05=YES         DISK I/O STATISTICS
+         END
+         IGWSMF SMF42_06=YES         DASD DATA SET STATISTICS
+         END
+         IGWSMF SMF42_09=YES         EOV ABENDS
+         END
+         IGWSMF SMF42_0A=YES         INSUFFICIENT SPACE
+         END
+         IGWSMF SMF42_0B=YES         EXTENDED REMOTE COPY STATISTICS
+         END
+         IGWSMF SMF42_0F=YES         VSAM RLS
+         END
+         IGWSMF SMF42_0G=YES         VSAM RLS
+         END
+         IGWSMF SMF42_0H=YES         VSAM RLS CF LOCK STRUCTURE
+         END
+         IGWSMF SMF42_0I=YES         VSAM RLS CF CACHE PARTITION USAGE
+         END
+         IGWSMF SMF42_0J=YES         VSAM RLS LOCAL BUFFER LRU
+         END
+         IGWSMF SMF42_0K=YES         STOW INITIALIZE
+         END
+         IGWSMF SMF42_0L=YES         PDS/PDSE MEMBER DELETE
+         END
+         IGWSMF SMF42_0M=YES         DFSMSRMM AUDIT
+         END
+         IGWSMF SMF42_0N=YES         DFSMSRMM SECURITY
+         END
+         IGWSMF SMF42_0P=YES         PDS/PDSE MEMBER REPLACED
+         END
+         IGWSMF SMF42_0Q=YES         PDS/PDSE MEMBER RENAMED
+         END
+         IGWSMF SMF42_27=YES         VTOC CHANGED
+         END
+         IFASMFR 43                                            IFASMFR4
+         END
+         IFASMFR 44                                            IFASMFR4
+         END
+         IFASMFR 45                                            IFASMFR4
+         END
+         IFASMFR 47                                            IAZSMFR
+         END
+         IFASMFR 48                                            IAZSMFR
+         END
+         IFASMFR 49                                            IAZSMFR
+         END
+         IFASMFR 50                                            IFASMFR5
+         END
+         IFASMFR 52                                            IAZSMFR
+         END
+         IFASMFR 53                                            IAZSMFR
+         END
+         IFASMFR 54                                            IAZSMFR
+         END
+         IFASMFR 55                                            IAZSMFR
+         END
+         IFASMFR 56                                            IAZSMFR
+         END
+         IFASMFR 57                                            IAZSMFR
+         END
+         IFASMFR 58                                            IAZSMFR
+         END
+**       IFASMFR 59  BULK DATA TRANSFER (BDT)                  BDTDSMF
+**       END
+         IFASMFR 62  DFP                                       IDASMF62
+         END
+         IFASMFR 63  DFP                                       IDASMF63
+         END
+         IFASMFR 64  DFP                                       IDASMF64
+         END
+         IFASMFR 67  DFP                                       IGGSMF67
+         END
+         IFASMFR 68  DFP                                       IGGSMF68
+         END
+         IFASMFR 69  DFP                                       IGGSMF69
+         END
+         ERBSMF70 1  RMF CPU
+         END
+         ERBSMF70 2  RMF CRYPTO
+         END
+         ERBSMF71 ,  RMF PAGING ACTIVITY
+         END
+         ERBSMF72 1  RMF WORKLOAD ACTIVITY
+         END
+         ERBSMF72 2  RMF MONITOR III
+         END
+         ERBSMF72 3  RMF WORKLOAD ACTIVITY - GOAL MODE
+         END
+         ERBSMF72 4  RMF MONITOR III - GOAL MODE
+         END
+         ERBSMF72 5  RMF MONITOR III - SUSPEND LOCKS AND GRS DATA
+         END
+         ERBSMF73 ,  RMF CHANNEL PATH ACTIVITY
+         END
+         ERBSMF74 1  RMF DEVICE ACTIVITY
+         END
+         ERBSMF74 2  RMF XCF ACTIVITY
+         END
+         ERBSMF74 3  RMF OMVS KERNEL ACTIVITY
+         END
+         ERBSMF74 4  RMF COUPLING FACILITY ACTIVITY
+         END
+         ERBSMF74 5  RMF CACHE SUBSYSTEM DEVICE ACTIVITY
+         END
+         ERBSMF74 6  RMF HFS STATISTICS
+         END
+         ERBSMF74 7  RMF FICON DIRECTOR STATISTICS
+         END
+         ERBSMF74 8  RMF ENTERPRISE DISK SYSTEM STATISTICS
+         END
+         ERBSMF74 9  RMF PCI EXPRESS BASED FUNCTION ACTIVITY
+         END
+         ERBSMF74 10 RMF EXTENDED ASYNCHRONOUS DATA MOVER (EADM) STATS
+         END
+         ERBSMF75 ,  RMF PAGE DATA SET ACTIVITY
+         END
+         ERBSMF76 ,  RMF TRACE ACTIVITY
+         END
+         ERBSMF77 ,  RMF ENQUEUE ACTIVITY
+         END
+         ERBSMF78 1  RMF 308X/4381 I/O QUEUING ACTIVITY
+         END
+         ERBSMF78 2  RMF VIRTUAL STORAGE ACTIVITY
+         END
+         ERBSMF78 3  RMF I/O QUEUEING (AND HYPERPAV/SUPERPAV) ACTIVITY
+**       END
+**       ERBSMF79 1  RMF ADDRESS SPACE STATE DATA
+**       END
+**       ERBSMF79 2  RMF ADDRESS SPACE RESOURCE DATA
+**       END
+**       ERBSMF79 3  RMF STORAGE/PROCESSOR (SRCS) DATA
+**       END
+**       ERBSMF79 4  RMF PAGING ACTIVITY
+**       END
+**       ERBSMF79 5  RMF ADDRESS SPACE SRM DATA
+**       END
+**       ERBSMF79 6  RMF RESERVE (SENQR) DATA
+**       END
+**       ERBSMF79 7  RMF ENQUEUE CONTENTION (SENQ) DATA
+**       END
+**       ERBSMF79 9  RMF DEVICE ACTIVITY
+**       END
+**       ERBSMF79 11 RMF PAGE DATA SET ACTIVITY
+**       END
+**       ERBSMF79 12 RMF CHANNEL PATH ACTIVITY
+**       END
+**       ERBSMF79 14 RMF I/O QUEUING ACTIVITY
+**       END
+**       ERBSMF79 15 RMF IRLM LONG LOCK DETECTION
+         END
+         IFASMFR 80                                            IFASMFR9
+         END
+         IFASMFR 81                                            IFASMFR9
+         END
+         IFASMFR 83                                            IFASMFR9
+         END
+         IFASMFR 85  OAM                                       CBRSMF
+         END
+         IFASMFR 87  GRS                                       ISGYSMFR
+         END
+         IFASMFR 88  LOGGER                                    IXGSMF88
+         END
+         IFASMFR 89                                            IFASMFRA
+         END
+         IFASMFR 90                                            IFASMFRA
+         END
+         IFASMFR 92  OMVS FILE SYSTEM                          BPXYSMFR
+         END
+         IFASMFR 94  AUTOMATED TAPE LIBRARY FUNCTION           IECSMF94
+         END
+**       IFASMFR 96  INTEGRATED REASONING SHELL (TIRS)         EWQSMF96
+**       END
+         IFASMFR 97  WORKLOAD MANAGER                          IWMSMF97
+         END
+         IFASMFR 98                                            IHAHR098
+         END
+         IFASMFR 124 I/O SUPERVISOR (IOS) INFORMATION          IOSDS124
+         END
+         IFASMFR 125 GENERIC TRACKER (USED TO BE 117)          GTZZSMF1
+         END
+/*
+//*
+//EXSYM   EXEC PGM=REVEXSYM
+//STEPLIB  DD  DISP=SHR,DSN=GREG.TEST.LOAD
+//OBJECTIN DD  DISP=SHR,DSN=GREG.FB80.DATA
+//ASMPRTIN DD  DISP=SHR,DSN=GREG.ASMPRT
+//PUNCHOUT DD  DSN=&&SOURCE,DISP=(NEW,PASS),
+//             UNIT=VIO,SPACE=(CYL,20),
+//             DSORG=PS,RECFM=FB,LRECL=80
+//SYSABEND DD  SYSOUT=*
+//IDIOFF   DD  DUMMY
+//*
+//UPDTE   EXEC PGM=IEBUPDTE,PARM=NEW
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=&&MACLIB,DISP=(NEW,PASS),
+//             UNIT=VIO,SPACE=(CYL,(2,0,20)),
+//             DSORG=PO,RECFM=FB,LRECL=80
+//SYSIN    DD  *
+./ ADD NAME=RECTYPE
+         MACRO
+&NAME    RECTYPE &OFFSET=0,&MASK=1,&BASE=0,&SHIFT=2,&LIMIT=0
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME = RECTYPE                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME = INDICATE RECORD BASE SECTION FOR RECORD TYPE    *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF RECORD TYPE INDICATOR IN RECORD               *
+.*                                                                    *
+.* &MASK    - BYTE MASK FOR REGISTER INSERTION TO PROCESS TYPE        *
+.*            WHERE THE TYPE BYTE COUNT WOULD EQUAL THE NUMBER        *
+.*            OF 1-BITS IN THIS MASK                                  *
+.*                                                                    *
+.* &LIMIT   - MAXIMUM VALID RECORD TYPE - 0 MEANS NO LIMIT            *
+.*                                                                    *
+.* &BASE    - MINIMUM TYPE WHICH IS SUBTRACTED BEFORE INDEXING        *
+.*            AFTER COMPARING AGAINST THE LIMIT VALUE                 *
+.*                                                                    *
+.* &SHIFT   - BIT SHIFT LEFT COUNT TO FORM INDEX INTO ADDRESS TABLE   *
+.*                                                                    *
+.*                                                                    *
+.**********************************************************************
+.*
+         DC    0F                      ALIGNMENT FOR FUN
+&NAME    DC    Y(C' T')                RECORD TYPING DESCRIPTOR
+         DC    Y(&OFFSET)              TYPE INDICATOR RECORD OFFSET
+         DC    A(&LIMIT)               HIGHEST VALID RECORD TYPE
+         DC    A(&BASE)                LOWEST VALID RECORD TYPE
+         DC    Y(&MASK)                MASK IN 1 -> 15 RANGE
+         DC    Y(&SHIFT)               SHIFT COUNT FOR INDEXING
+         MEND
+./ ADD NAME=RECSECT
+         MACRO
+&NAME    RECSECT &FLGS,&LVL,&LENOFST,&NXTSECT
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME = RECSECT                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME = DEFINE RECORD SECTION                           *
+.*                                                                    *
+.*                                                                    *
+.* &FLGS    - DECIMAL NUMBER IN THE 0-255 RANGE DEFINING A FLAG BYTE  *
+.*            X'80' - LAST SECTION ENTRY FOR RECORD                   *
+.*            X'40' - INSTANCES OF THIS SECTION ARE CHAINED           *
+.*            X'20' - ACTUAL SECTION LENGTH BYTE COUNT FOLLOWS        *
+.*            X'10' - OFFSET BASED ON INDEX SECTION, NOT RECORD       *
+.*            X'08' - TRIPLET ORDER IS OFFSET, COUNT, LENGTH          *
+.*            X'04' - SECTION OFFSET IS 4 BYTES IN SIZE               *
+.*            X'02' - 2-BYTE SECTION LENGTH FOLLOWS 4-BYTE OFFSET     *
+.*            X'01' - 2-BYTE SECTION COUNT FOLLOWS 2-BYTE LENGTH      *
+.*                                                                    *
+.* &LVL     - LEVEL OF THE SECTION CONTAINING THE DETAILS OF THIS     *
+.*            SECTION PLUS ONE - LEVEL 0 IS THE RECORD BASE           *
+.*                                                                    *
+.* &LENOFST - OFFSET IN THIS SECTION OF 2-BYTE SECTION LENGTH         *
+.*               = OR =    (IF X'04' OF &FLGS IS SET)                 *
+.*            OFFSET IN PREVIOUS OR BASE SECTION OF 4-BYTE OFFSET     *
+.*                                                                    *
+.* &NXTSECT - NAME OF FOLLOWING SECTION                               *
+.*                                                                    *
+.*                                                                    *
+.**********************************************************************
+.*
+         LCLC  &LABEL1
+         LCLC  &LABEL2
+&LABEL1  SETC  '#S'.'&SYSNDX'
+&LABEL2  SETC  '#E'.'&SYSNDX'
+         AIF   (T'&NAME EQ 'O').NMLNOK
+.NMLNOK  ANOP
+&NAME    DC    CL2' D'                 DSECT DESCRIPTOR INDICATOR
+         DC    AL1(&FLGS)              FLAG BYTE
+         DC    AL1(0)                  FLAG BYTE - CURRENTLY UNUSED
+         DC    AL1(&LVL)               STRUCTURE HIERARCHY LEVEL
+         DC    AL1(&LABEL2-&LABEL1)    LENGTH OF DSECT NAME
+         DC    AL2(&LENOFST)           LENGTH INDICATOR OFFSET
+&LABEL1  EQU   *
+         AIF   (T'&NAME EQ 'O').NAMEOK
+         DC    C'&NAME'                NAME OF DSECT
+.NAMEOK  ANOP
+&LABEL2  EQU   *
+         AIF   (T'&NXTSECT EQ 'O').NEXTOK
+         DC    C'&NXTSECT'             NAME OF RECORD'S NEXT STRUCTURE
+.NEXTOK  ANOP
+         MEND
+./ ADD NAME=RECITEM
+         MACRO
+&NAME    RECITEM &OFFSET,&LENGTH
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME = RECITEM                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME = DEFINE ITEM IN CURRENT RECORD SECTION           *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF ITEM FROM START OF SECTION                    *
+.*                                                                    *
+.* &LENGTH  - LENGTH OF ITEM IN BYTES                                 *
+.*                                                                    *
+.*                                                                    *
+.**********************************************************************
+.*
+         LCLC  &LABEL1
+         LCLC  &LABEL2
+&LABEL1  SETC  '#S'.'&SYSNDX'
+&LABEL2  SETC  '#E'.'&SYSNDX'
+         DC    CL2' I'                 RECORD ITEM INDICATOR
+         DC    AL2(&OFFSET)            OFFSET OF ITEM
+         DC    AL2(&LENGTH)            LENGTH OF ITEM
+         DC    AL1(&LABEL2-&LABEL1)    LENGTH OF ITEM NAME
+&LABEL1  EQU   *
+         AIF   (T'&NAME EQ 'O').NAMEOK
+         DC    C'&NAME'                NAME OF ITEM
+.NAMEOK  ANOP
+&LABEL2  EQU   *
+         MEND
+./ ENDUP
+/*
+//*
+//ASM     EXEC PGM=ASMA90,PARM='TERM,NODECK,OBJECT,LC(150),NOXREF'
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=&&MACLIB,DISP=(OLD,DELETE)
+//         DD  DSN=SYS1.MODGEN,DISP=SHR
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(10,2))
+//SYSLIN   DD  DSN=&&OBJSET,DISP=(NEW,PASS),UNIT=VIO,
+//             SPACE=(CYL,(1,1)),
+//             DCB=(DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=4080)
+//SYSIN    DD  DSN=&&SOURCE,DISP=(OLD,DELETE)
+//*
+//LKED    EXEC PGM=IEWL,PARM='LIST,MAP,REUS,RENT,REFR,OL,NCAL'
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&OBJSET,DISP=(OLD,DELETE)
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(1,1))
+//SYSLMOD  DD  DSN=GREG.TEST.LOAD(REVSMFZ),DISP=SHR
+//

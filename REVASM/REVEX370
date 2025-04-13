@@ -1,0 +1,470 @@
+//GREGS370 JOB (),G.PRICE,CLASS=A,MSGCLASS=X,MSGLEVEL=(1,1),
+//             NOTIFY=&SYSUID.,REGIONX=(4M,1G),COND=(0,NE)
+/*JOBPARM L=200
+//*
+//*  JOB TO CREATE THE REVSMFZ DATA-ONLY MODULE WHICH IS LOADED
+//*  BY REVIEW WHEN TO THE 'ZOOM' SUBCOMMAND IS ISSUED
+//*
+//*  THE MAIN STEPS OF THIS JOB ARE:
+//*
+//*   1. ASSEMBLE DSECTS OF RECORD TYPES TO BE RECOGNIZED BY
+//*      THE 'ZOOM' SUBCOMMAND OF REVIEW.  THE 'TEST' ASSEMBLER
+//*      OPTION IS USED TO CAUSE THE GENERATION OF SYM RECORDS
+//*      IN THE RESULTANT OBJECT.  THE OBJECT DECK AND THE
+//*      LISTING ARE GENERATED OUTPUTS TO BE POST-PROCESSED
+//*      BY THE NEXT STEP.
+//*
+//*   2. RUN THE REVEXSYM PROGRAM TO POST-PROCESS THE OUTPUTS
+//*      OF THE RECORD DSECTS ASSEMBLE.  THE OUTPUT IS ASSEMBLER
+//*      SOURCE THAT INVOKES PROVIDED MACROS.
+//*
+//*   3. RUN THE IEBUPDTE PROGRAM TO LOAD THE MACROS NEEDED
+//*      TO ASSEMBLE THE REVSMFZ PROGRAM INTO A MACRO LIBRARY.
+//*
+//*   4. ASSEMBLE THE REVSMFZ DATA-ONLY MODULE.
+//*
+//*   5. LINK EDIT THE REVSMFZ DATA-ONLY MODULE.  THIS MODULE
+//*      WOULD USUALLY RESIDE IN THE SAME LIBRARY AS THE
+//*      REVIEW COMMAND PROCESSOR (AND ALL ITS ALIASES).
+//*
+//*
+//*REPARE EXEC PGM=IEFBR14
+//*SMPRT   DD  DSN=&SYSUID..ASMPRT,DISP=(MOD,DELETE),
+//*            UNIT=3390,SPACE=(TRK,0)
+//*
+//ASMSMF  EXEC PGM=ASMA90,PARM='TERM,NODECK,OBJECT,LC(150),BATCH,TEST'
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  DSN=&SYSUID..ASMPRT,DISP=SHR
+//*YSPRINT DD  DSN=&SYSUID..ASMPRT,DISP=(NEW,CATLG),
+//*            UNIT=3390,SPACE=(TRK,(200,50)),
+//*            DSORG=PS,RECFM=FBA,LRECL=121
+//SYSLIB   DD  DISP=SHR,DSN=SYS1.MACLIB
+//         DD  DISP=SHR,DSN=SYS1.MODGEN
+//         DD  DISP=SHR,DSN=TCPIP.SEZACMAC
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(10,2))
+//SYSLIN   DD  DSN=&SYSUID..FB80.DATA,DISP=SHR SPACE=(TRK,(10,5))
+//SYSIN    DD  *
+         IFASMFR 0                                             IFASMFR
+         END
+*
+* THIS RECORD IS WRITTEN AFTER EVERY IPL AND AT THE FIRST JOB/STEP
+* TERMINATION AFTER THE EXPIRATION OF ONE 10 MINUTE INTERVAL.
+* RECORD LENGTH  IS  54 BYTES.
+*
+SMFRCD1  DSECT ,         HEADER SEGMENT
+SMF1LEN  DS    BL2       RECORD LENGTH
+SMF1SEG  DS    BL2       SEGMENT DESCRIPTOR
+SMF1FLG  DS    BL1       HEADER FLAG BYTE
+SMF1RTY  DS    BL1       RECORD TYPE 1
+SMF1TME  DS    BL4       TOD, USING FORMAT FROM TIME MACRO W/BIN. INTVL
+SMF1DTE  DS    PL4            DATE IN PACKED DECIMAL FORM: 00YYDDDF
+*                             ( F IS A SIGN)
+SMF1SID  DS    CL2       SYSTEM IDENTIFICATION
+SMF1MOD  DS    CL2       MODEL NO.
+SMF1SWT  DS    BL4           SYSTEM WAIT TIME IN HUNDREDTHS OF SECONDS
+*                            COLLECTED DURING EXPIRED 10 MINUTE
+*                            INTERVALS SINCE LAST WAIT TIME RECORD
+SMF1TEXP DS    BL4       COLLECTION END TIME
+SMF1PGIN DS    BL4       TOTAL PAGE-INS
+SMF1PGOT DS    BL4       TOTAL PAGE-OUTS
+SMF1PGRL DS    BL4       TOTAL PAGES RECLAIMED
+SMF1RGNS DS    BL4       TOTAL REGIONS SWAPPED (AOS/2 ONLY)
+SMF1SPIN DS    BL4       SWAP PAGE-INS
+SMF1SPOT DS    BL4       SWAP PAGE-OUTS
+SMF1RGNM DS    BL4       REGIONS MIGRATED
+SMF1PGM  DS    BL4       PAGES MIGRATED
+         END
+         IFASMFR 2                                             IFASMFR
+         END
+         IFASMFR 3                                             IFASMFR
+         END
+         IFASMFR 4                                             IFASMFR
+         END
+         IFASMFR 5                                             IFASMFR
+         END
+         IFASMFR 6                                             IFASMFR
+         END
+         IFASMFR 7                                             IFASMFR1
+         END
+         IFASMFR 8                                             IFASMFR1
+         END
+         IFASMFR 9                                             IFASMFR1
+         END
+         IFASMFR 10                                            IFASMFR1
+         END
+         IFASMFR 11                                            IFASMFR1
+         END
+         IFASMFR 14  DFP                                       IFGSMF14
+         SPACE
+SMFJFCB  DSECT
+         IEFJFCBN LIST=YES
+         END
+         IFASMFR 17  DFP                                       IGGSMF17
+         END
+         IFASMFR 18  DFP                                       IGGSMF18
+         END
+         IFASMFR 19  DFP                                       IGGSMF19
+         END
+         IFASMFR 20                                            IFASMFR2
+         END
+         IFASMFR 21  DFP                                       IGESMF21
+         END
+         IFASMFR 22                                            IFASMFR2
+         END
+         IFASMFR 23                                            IFASMFR2
+         END
+         IAZSMFR 25                                            IAZSMF25
+         END
+         IAZSMFR 26                                            IAZSMF26
+         END
+PREMVS30 DSECT
+TSTSMF   EQU   *                   SMF START TS RECORD FORMAT
+TSTRLEN  DS    BL2       RECORD LENGTH
+TSTRSEG  DS    BL2       SEGMENT DESCRIPTOR
+TSTRFLG  DS    BL1                 HEADER FLAG BYTE
+TSTRCDTY DS    BL1                 RECORD TYPE  (30 DECIMAL)
+TSTRCDTS DS    BL4                 TIME STAMP  TOD  100THS SECS
+TSTRCDTE DS    PL4                             DATE 00YYDDDF
+TSTCPUID DS    CL4                 CPU IDENTIFICATION (SYSTEM, MODEL)
+TSTSPROC DS    CL8                 TS SHARING INIT PROC NAME
+TSTID    DS    CL8                 TS SHARING TASK IDENTIFIER
+TSTMBR   DS    CL8                 MEMBER NAME IN PARMLIB
+TSTSMFOP DS    BL1                 SMF FOREGROUND OPTIONS:
+*                       BIT0 - SYSTEM AND JOB DATA REQUESTED
+*                       BIT1 - SYSTEM, JOB, AND STEP DATA REQUESTED
+*                       BIT2 - EXITS REQUESTED
+*                       BIT3 - DATA-SET ACCOUNTING
+*                       BIT4 - VOLUME ACCOUNTING
+*                       BIT5 - RESERVED
+*                       BIT6 - TEMPORARY DATA SET SCRATCH RECORDS
+*                       BIT7 - ALWAYS 1
+TSTNRGNF DS    BL1                 MAX NUMBER TS REGIONS
+TSTTSC   DS    BL2                 TSC REGION SIZE(SIZE OF REGION IN
+*                                  2K BLOCKS)
+TSTDSPCH DS    CL8                 TS DISPATCHING ROUTINE NAME
+TSTTRMS  DS    BL2                 NUMBER OF POSSIBLE TS TERMINALS
+TSTSUBMT DS    BL2       RESERVED
+TSTLGRPS DS    BL2       RESERVED
+TSTUCT   DS    BL2       RESERVED
+TSTRVA   DS    BL20                RESERVED
+TSTASTSO DC    BL4'0'        TOTAL AUXILIARY STORAGE AVAILABLE
+*                                  TO TSO (IN 2K BLOCKS)
+TSTASBGD DC    BL2'0'        TOTAL AUXILIARY STORAGE AVAILABLE
+*                                  TO BACKGROUND (IN 2K BLOCKS)
+TSTBCKUP DC    BL1'0'              PERCENT OF BACKUP IN USE FOR
+*                                  TSO USER REGIONS
+TSTUSRMX DC    BL2'0'        MAXIMUM NUMBER OF TS USERS ALLOWED
+TSTSDVC1 DC    BL1'0'              DEVICE CLASS OF SWAP DEVICE
+TSTSUNT1 DC    BL1'0'              UNIT TYPE OF SWAP DEVICE
+TSTSCUA1 DC    BL2'0'        CHANNEL/UNIT ADDRESS OF SWAP DEVICE
+TSTSDVC2 DC    BL1'0'              DEVICE CLASS OF SWAP DEVICE
+TSTSUNT2 DC    BL1'0'              UNIT TYPE OF SWAP DEVICE
+TSTSCUA2 DC    BL2'0'        CHANNEL/UNIT ADDRESS OF SWAP DEVICE
+TSTSDVC3 DC    BL1'0'              DEVICE CLASS OF SWAP DEVICE
+TSTSUNT3 DC    BL1'0'              UNIT TYPE OF SWAP DEVICE
+TSTSCUA3 DC    BL2'0'        CHANNEL/UNIT ADDRESS OF SWAP DEVICE
+TSTSDVC4 DC    BL1'0'              DEVICE CLASS OF SWAP DEVICE
+TSTSUNT4 DC    BL1'0'              UNIT TYPE OF SWAP DEVICE
+TSTSCUA4 DC    BL2'0'        CHANNEL/UNIT ADDRESS OF SWAP DEVICE
+TSTVAR   DC    2BL1'0'             LENGTH OF REST OF RECORD
+*                                  (INCLUDING THESE TWO BYTES)
+TSTRGNF  EQU   *                   REGION NUMBER + SIZE
+*
+TSTNE    DC    BL1'0'              NUMBER OF ENTRIES
+*
+*                                  EACH ENTRY
+*
+TSTRN    DC    BL1'0'              REGION NUMBER
+TSTLSIZ  DC    BL2'0'              LSQS SIZE IN 2K BLOCKS
+TSTRSIZ  DC    BL2'0'              REGION SIZE IN 2K BLOCKS
+*
+         END
+         IFASMFR 31                                            IFASMFR3
+         END
+         IFASMFR 34                                            IFASMFR3
+         END
+         IFASMFR 35                                            IFASMFR3
+         END
+         IFASMFR 40                                            IFASMFR4
+         END
+         IFASMFR 43                                            IAZSMF43
+         END
+         IFASMFR 44                                            IFASMFR4
+         END
+         IFASMFR 45                                            IAZSMF45
+         END
+         IFASMFR 47                                            IAZSMF47
+         END
+         IFASMFR 48                                            IAZSMF48
+         END
+         IFASMFR 49                                            IAZSMF49
+         END
+         IFASMFR 50                                            IFASMFR5
+         END
+         IFASMFR 62  DFP                                       IDASMF62
+         END
+         IFASMFR 63  DFP                                       IDASMF63
+         END
+         IFASMFR 64  DFP                                       IDASMF64
+         END
+         IFASMFR 67  DFP                                       IGGSMF67
+         END
+         IFASMFR 68  DFP                                       IGGSMF68
+         END
+         IFASMFR 69  DFP                                       IGGSMF69
+         END
+/*
+//*
+//EXSYM   EXEC PGM=REVEXSYM
+//STEPLIB  DD  DISP=SHR,DSN=&SYSUID..TEST.LOAD
+//OBJECTIN DD  DISP=SHR,DSN=&SYSUID..FB80.DATA
+//ASMPRTIN DD  DISP=SHR,DSN=&SYSUID..ASMPRT
+//PUNCHOUT DD  DSN=&&SOURCE,DISP=(NEW,PASS),
+//             UNIT=VIO,SPACE=(CYL,30),
+//             DSORG=PS,RECFM=FB,LRECL=80
+//SYSABEND DD  SYSOUT=*
+//IDIOFF   DD  DUMMY
+//*
+//UPDTE   EXEC PGM=IEBUPDTE,PARM=NEW
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=&&MACLIB,DISP=(NEW,PASS),
+//             UNIT=VIO,SPACE=(CYL,(2,0,20)),
+//             DSORG=PO,RECFM=FB,LRECL=80
+//SYSIN    DD  *
+./ ADD NAME=RECTYPE
+         MACRO
+&NAME    RECTYPE &OFFSET=0,&MASK=1,&BASE=0,&SHIFT=2,&FLAG=0,&LIMIT=0
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECTYPE                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - HEADER FOR RECORD/SECTION TYPE VECTOR TABLE     *
+.*                                                                    *
+.*                                                                    *
+.* FUNCTION - RECTYPE DESCRIBES HOW THE INDEX INTO THE ADDRESS        *
+.*            VECTOR WHICH IMMEDIATELY FOLLOWS THIS STRUCTURE IS      *
+.*            TO BE ACQUIRED FROM A RECORD'S DATA.  THE ADDRESS       *
+.*            VECTOR ITSELF CONTAINS NO INFORMATION ABOUT RECORD      *
+.*            OR SECTION TYPES/SUBTYPES.                              *
+.*                                                                    *
+.*            EACH ENTRY OF THE ADDRESS VECTOR POINTS TO EITHER A     *
+.*            RECSECT OR A RECLIST OR A FURTHER RECTYPE STRUCTURE     *
+.*            WHICH BEGINS OR FURTHER QUALIFIES THE STRUCTURAL        *
+.*            DESCRIPTION OF THE RECORD (OR SECTION) TYPE (OR         *
+.*            SUBTYPE).                                               *
+.*                                                                    *
+.*            A ZERO ADDRESS VECTOR ENTRY MEANS THAT THE TYPE         *
+.*            OR SUBTYPE IS NOT KNOWN.                                *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF RECORD TYPE INDICATOR IN RECORD OR SECTION    *
+.*                                                                    *
+.* &LIMIT   - MAXIMUM VALID (SUB)TYPE VALUE - 0 MEANS NO LIMIT        *
+.*                                                                    *
+.* &BASE    - MINIMUM (SUB)TYPE - THIS VALUE IS SUBTRACTED FROM       *
+.*            THE EXTRACTED VALUE (AFTER FIRST BEING COMPARED TO      *
+.*            THE LIMIT VALUE) BEFORE BEING USED FOR INDEXING         *
+.*                                                                    *
+.* &FLAG    - FLAG BYTE VALUE                                         *
+.*            0 - TYPE INDICATOR OFFSET IS A RECORD OFFSET            *
+.*            1 - TYPE INDICATOR OFFSET IS A SECTION OFFSET           *
+.*                                                                    *
+.* &MASK    - BYTE MASK VALUE (IN THE 1 TO 15 RANGE) FOR REGISTER     *
+.*            INSERTION TO PROCESS TYPE WHERE THE TYPE BYTE COUNT     *
+.*            WOULD EQUAL THE NUMBER OF 1-BITS IN THIS MASK           *
+.*                                                                    *
+.* &SHIFT   - BIT SHIFT LEFT COUNT TO FORM INDEX INTO ADDRESS TABLE   *
+.*                                                                    *
+.**********************************************************************
+.*
+         DC    0F                      ALIGNMENT FOR FUN
+&NAME    DC    Y(C' T')                RECORD TYPING DESCRIPTOR
+         DC    Y(&OFFSET)              TYPE INDICATOR OFFSET
+         DC    A(&LIMIT)               HIGHEST VALID TYPE
+         DC    A(&BASE)                LOWEST VALID TYPE
+         DC    AL1(&FLAG)              FLAG BYTE VALUE
+         DC    AL1(&MASK)              MASK IN 1 -> 15 RANGE
+         DC    Y(&SHIFT)               SHIFT COUNT FOR INDEXING
+         MEND
+./ ADD NAME=RECLIST
+         MACRO
+&NAME    RECLIST &OFFSET=0,&MASK=1,COUNT=1
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECLIST                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - HEADER FOR RECORD/SECTION TYPE LIST             *
+.*                                                                    *
+.*                                                                    *
+.* FUNCTION - RECLIST DESCRIBES HOW THE TYPE OR SUBTYPE VALUE IS      *
+.*            TO BE EXTRACTED FROM THE RECORD'S DATA BEFORE BEING     *
+.*            USED TO MATCH AN ENTRY IN THE VALUE+ADDRESS VECTOR      *
+.*            TABLE THAT IMMEDIATELY FOLLOWS THIS STRUCTURE.          *
+.*                                                                    *
+.*            THE ADDRESS PART OF EACH ENTRY OF THE VECTOR TABLE      *
+.*            POINTS TO EITHER A RECSECT OR A RECTYPE OR A            *
+.*            FURTHER RECLIST STRUCTURE WHICH BEGINS OR FURTHER       *
+.*            QUALIFIES THE STRUCTURAL DESCRIPTION OF THE RECORD      *
+.*            (OR SECTION) TYPE (OR SUBTYPE).                         *
+.*                                                                    *
+.*            TYPE OR SUBTYPE VALUES WHICH HAVE NO MATCHING ENTRY     *
+.*            ARE NOT KNOWN.                                          *
+.*                                                                    *
+.*            THE MAIN DIFFERENCE BETWEEN RECLIST AND RECTYPE IS      *
+.*            THAT RECTYPE IS INTENDED TO HANDLE A CONTINUUM OF       *
+.*            TYPES WITHIN A LOWER AND UPPER RANGE LIMIT, WHILE       *
+.*            RECLIST IS INTENDED TO HANDLE CASES WHERE KNOWN TYPE    *
+.*            VALUES SPARSELY POPULATE THE POSSIBLE TYPE-SPACE.       *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF RECORD TYPE INDICATOR IN RECORD OR SECTION    *
+.*                                                                    *
+.* &MASK    - BYTE MASK VALUE (IN THE 1 TO 15 RANGE) FOR REGISTER     *
+.*            INSERTION TO PROCESS TYPE WHERE THE TYPE BYTE COUNT     *
+.*            WOULD EQUAL THE NUMBER OF 1-BITS IN THIS MASK           *
+.*                                                                    *
+.* &COUNT   - NUMBER OF ENTRIES IN THE VALUE+ADDRESS VECTOR TABLE     *
+.*                                                                    *
+.**********************************************************************
+.*
+         DC    0F                      ALIGNMENT FOR FUN
+&NAME    DC    Y(C' L')                RECORD TYPE LIST DESCRIPTOR
+         DC    Y(&OFFSET)              TYPE INDICATOR RECORD OFFSET
+         DC    Y(&MASK)                MASK IN 1 -> 15 RANGE
+         DC    Y(&COUNT)               LIST VECTOR TABLE ENTRY COUNT
+         MEND
+./ ADD NAME=RECSECT
+         MACRO
+&NAME    RECSECT &FLG1,&FLG2,&OO,&LO,&NO,&OM,&LM,&NM,&LVL,&NXTSECT,    +
+               &DESC=
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECSECT                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - DEFINE RECORD SECTION                           *
+.*                                                                    *
+.*                                                                    *
+.* &FLG1    - FLAG BYTE 2 (0-255)                                     *
+.*            X'80' - LAST SECTION ENTRY FOR RECORD                   *
+.*            X'40' - INSTANCES OF THIS SECTION ARE CHAINED           *
+.*            X'20' - ACTUAL SECTION LENGTH BYTE COUNT FOLLOWS        *
+.*            X'10' - OFFSET BASED ON INDEX SECTION, NOT RECORD       *
+.*            X'08' - TRIPLET ORDER IS OFFSET, COUNT, LENGTH          *
+.*            X'04' - SECTION OFFSET IS 4 BYTES IN SIZE               *
+.*            X'02' - 2-BYTE SECTION LENGTH FOLLOWS 4-BYTE OFFSET     *
+.*            X'01' - 2-BYTE SECTION COUNT FOLLOWS 2-BYTE LENGTH      *
+.*                                                                    *
+.* &FLG2    - FLAG BYTE 2 (0-255) - NOT CURRENTLY USED                *
+.*                                                                    *
+.* &OO      - 2-BYTE OFFSET OF WHERE SECTION OFFSET IS STORED         *
+.* &LO      - 2-BYTE OFFSET OF WHERE SECTION LENGTH IS STORED         *
+.* &NO      - 2-BYTE OFFSET OF WHERE SECTION NUMBER IS STORED         *
+.* &OM      - ICM MASK (0-15) FOR OFFSET - IF 0 &OO IS ACTUAL VALUE   *
+.* &LM      - ICM MASK (0-15) FOR LENGTH - IF 0 &LO IS ACTUAL VALUE   *
+.* &NM      - ICM MASK (0-15) FOR NUMBER - IF 0 &NO IS ACTUAL VALUE   *
+.*                                                                    *
+.* &LVL     - LEVEL (0-255) OF THE SECTION CONTAINING THE DETAILS OF  *
+.*            THIS SECTION PLUS ONE - LEVEL 0 IS THE RECORD BASE      *
+.*                                                                    *
+.* &NXTSECT - NAME OF FOLLOWING SECTION                               *
+.* &DESC    - BRIEF DESCRIPTION OF SECTION                            *
+.*                                                                    *
+.**********************************************************************
+.*
+         LCLC  &LABEL1
+         LCLC  &LABEL2
+&LABEL1  SETC  '#S'.'&SYSNDX'
+&LABEL2  SETC  '#E'.'&SYSNDX'
+         AIF   (T'&NAME EQ 'O').NMLNOK
+.NMLNOK  ANOP
+&NAME    DC    CL2' D'                 DSECT DESCRIPTOR INDICATOR
+         DC    AL1(&FLG1)              FLAG BYTE 1
+         DC    AL1(&FLG2)              FLAG BYTE 2
+         AIF   (T'&NXTSECT EQ 'O').NONEXT
+         DC    AL4(&NXTSECT-*+4)       OFFSET TO NEXT SECTION'S ' D'
+         AGO   .NEXTOK
+.NONEXT  ANOP
+         DC    AL4(0)                  NO NEXT SECTION
+.NEXTOK  ANOP
+         DC    AL2(&OO)                OFFSET LOCATOR
+         DC    AL2(&LO)                LENGTH LOCATOR
+         DC    AL2(&NO)                NUMBER LOCATOR
+         DC    AL1(&OM)                OFFSET ICM MASK
+         DC    AL1(&LM)                LENGTH ICM MASK
+         DC    AL1(&NM)                NUMBER ICM MASK
+         DC    AL1(&LVL)               STRUCTURE HIERARCHY LEVEL
+         DC    AL1(&LABEL2-&LABEL1)    LENGTH OF DSECT NAME
+&LABEL1  EQU   *
+         AIF   (T'&NAME EQ 'O').NAMEOK
+         DC    C'&NAME'                NAME OF DSECT
+.NAMEOK  ANOP
+         AIF   (T'&DESC EQ 'O').DESCOK
+         DC    C&DESC
+.DESCOK  ANOP
+&LABEL2  EQU   *
+         MEND
+./ ADD NAME=RECITEM
+         MACRO
+&NAME    RECITEM &OFFSET,&LENGTH,&FLGS
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECITEM                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - DEFINE ITEM IN CURRENT RECORD SECTION           *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF ITEM FROM START OF SECTION                    *
+.*                                                                    *
+.* &LENGTH  - LENGTH OF ITEM IN BYTES                                 *
+.*                                                                    *
+.* &FLGS    - DECIMAL NUMBER IN THE 0-255 RANGE DEFINING A FLAG BYTE  *
+.*            X'80' - FORMAT AS TIME-OF-DAY JIFFIES                   *
+.*            X'40' - FORMAT ONLY AS HEXADECIMAL                      *
+.*            X'20' - FORMAT ONLY AS DECIMAL                          *
+.*            X'10' - FORMAT ONLY AS CHARACTER                        *
+.*            X'08' - FORMAT ONLY AS CHARACTER OR HEX                 *
+.*            X'04' - FORMAT AS RECORD FORMAT                         *
+.*            X'02' - FORMAT AS DATA SET ORGANIZATION                 *
+.*            X'01' - NOT USED                                        *
+.*                                                                    *
+.**********************************************************************
+.*
+         LCLC  &LABEL1
+         LCLC  &LABEL2
+&LABEL1  SETC  '#S'.'&SYSNDX'
+&LABEL2  SETC  '#E'.'&SYSNDX'
+         DC    CL2' I'                 RECORD ITEM INDICATOR
+         DC    AL2(&OFFSET)            OFFSET OF ITEM
+         DC    AL2(&LENGTH)            LENGTH OF ITEM
+         DC    AL1(&FLGS)              FLAG BYTE
+         DC    AL1(&LABEL2-&LABEL1)    LENGTH OF ITEM NAME
+&LABEL1  EQU   *
+         AIF   (T'&NAME EQ 'O').NAMEOK
+         DC    C'&NAME'                NAME OF ITEM
+.NAMEOK  ANOP
+&LABEL2  EQU   *
+         MEND
+./ ENDUP
+/*
+//*
+//ASM     EXEC PGM=ASMA90,PARM='TERM,NODECK,OBJECT,LC(150),NOXREF'
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=&&MACLIB,DISP=(OLD,DELETE)
+//         DD  DSN=SYS1.MODGEN,DISP=SHR
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(10,2))
+//SYSLIN   DD  DSN=&&OBJSET,DISP=(NEW,PASS),UNIT=VIO,
+//             SPACE=(CYL,(1,1)),
+//             DCB=(DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=4080)
+//SYSIN    DD  DSN=&&SOURCE,DISP=(OLD,DELETE)
+//*
+//LKED    EXEC PGM=IEWL,PARM='LIST,MAP,REUS,RENT,REFR,OL,NCAL'
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&OBJSET,DISP=(OLD,DELETE)
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(1,1))
+//SYSLMOD  DD  DSN=&SYSUID..REVIEW.LOAD(REVSMF7),DISP=SHR
+//

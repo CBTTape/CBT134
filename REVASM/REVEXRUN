@@ -1,0 +1,866 @@
+//GREGEXR  JOB (),G.PRICE,CLASS=A,MSGCLASS=X,MSGLEVEL=(1,1),
+//             NOTIFY=&SYSUID.,REGIONX=(4M,1G),COND=(8,LT)
+/*JOBPARM L=250
+//*
+//*  JOB TO CREATE THE REVSMFZ DATA-ONLY MODULE WHICH IS LOADED
+//*  BY REVIEW WHEN TO THE 'ZOOM' SUBCOMMAND IS ISSUED
+//*
+//*  THE MAIN STEPS OF THIS JOB ARE:
+//*
+//*   1. ASSEMBLE DSECTS OF RECORD TYPES TO BE RECOGNIZED BY
+//*      THE 'ZOOM' SUBCOMMAND OF REVIEW.  THE 'TEST' ASSEMBLER
+//*      OPTION IS USED TO CAUSE THE GENERATION OF SYM RECORDS
+//*      IN THE RESULTANT OBJECT.  THE OBJECT DECK AND THE
+//*      LISTING ARE GENERATED OUTPUTS TO BE POST-PROCESSED
+//*      BY THE NEXT STEP.
+//*
+//*   2. RUN THE REVEXSYM PROGRAM TO POST-PROCESS THE OUTPUTS
+//*      OF THE RECORD DSECTS ASSEMBLE.  THE OUTPUT IS ASSEMBLER
+//*      SOURCE THAT INVOKES PROVIDED MACROS.
+//*
+//*   3. RUN THE IEBUPDTE PROGRAM TO LOAD THE MACROS NEEDED
+//*      TO ASSEMBLE THE REVSMFZ PROGRAM INTO A MACRO LIBRARY.
+//*
+//*   4. ASSEMBLE THE REVSMFZ DATA-ONLY MODULE.
+//*
+//*   5. LINK EDIT THE REVSMFZ DATA-ONLY MODULE.  THIS MODULE
+//*      WOULD USUALLY RESIDE IN THE SAME LIBRARY AS THE
+//*      REVIEW COMMAND PROCESSOR (AND ALL ITS ALIASES).
+//*
+//*
+//*REPARE EXEC PGM=IEFBR14
+//*SMPRT   DD  DSN=&SYSUID..ASMPRT,DISP=(MOD,DELETE),
+//*            UNIT=3390,SPACE=(TRK,0)
+//*
+//ASMSMF  EXEC PGM=ASMA90,PARM='TERM,NODECK,OBJECT,LC(150),BATCH,TEST'
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  DSN=&SYSUID..ASMPRT,DISP=SHR
+//*YSPRINT DD  DSN=&SYSUID..ASMPRT,DISP=(NEW,CATLG),
+//*            UNIT=3390,SPACE=(TRK,(200,50)),
+//*            DSORG=PS,RECFM=FBA,LRECL=121
+//SYSLIB   DD  DISP=SHR,DSN=SYS1.MACLIB
+//         DD  DISP=SHR,DSN=SYS1.MODGEN
+//         DD  DISP=SHR,DSN=TCPIP.SEZACMAC
+//*        DD  DISP=SHR,DSN=CICS.TS56.CICS.SDFHMAC
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(10,2))
+//SYSLIN   DD  DSN=&SYSUID..FB80.DATA,DISP=SHR SPACE=(TRK,(10,5))
+//SYSIN    DD  *
+         IFASMFR 0                                             IFASMFR
+         END
+         IFASMFR 2                                             IFASMFR
+         END
+         IFASMFR 3                                             IFASMFR
+         END
+         IFASMFR 4                                             IFASMFR
+         END
+         IFASMFR 5                                             IFASMFR
+         END
+         IFASMFR 6                                             IFASMFR
+         END
+         IFASMFR 7                                             IFASMFR1
+         END
+         IFASMFR 8                                             IFASMFR1
+         END
+         IFASMFR 9                                             IFASMFR1
+         END
+         IFASMFR 10                                            IFASMFR1
+         END
+         IFASMFR 11                                            IFASMFR1
+         END
+         IFASMFR 14  DFP                                       IFGSMF14
+         SPACE
+SMFJFCB  DSECT
+         IEFJFCBN LIST=YES
+         END
+         IFASMFR 17  DFP                                       IGGSMF17
+         END
+         IFASMFR 18  DFP                                       IGGSMF18
+         END
+         IFASMFR 19  DFP                                       IGGSMF19
+         END
+         IFASMFR 20                                            IFASMFR2
+         END
+         IFASMFR 21  DFP                                       IGESMF21
+         END
+         IFASMFR 22                                            IFASMFR2
+         END
+         IFASMFR 23                                            IFASMFR2
+         END
+         IAZSMFR 24                                            IAZSMF24
+         END
+         IAZSMFR 25                                            IAZSMF25
+         END
+         IAZSMFR 26                                            IAZSMF26
+         END
+         IFASMFR 30                                            IFASMFR3
+         END
+         IFASMFR 31                                            IFASMFR3
+         END
+         IFASMFR 32                                            IFASMFR3
+         END
+         IFASMFR 33                                            IFASMFR3
+         END
+         IFASMFR 34                                            IFASMFR3
+         END
+         IFASMFR 35                                            IFASMFR3
+         END
+         IFASMFI6 36
+         END
+**       IFASMFR 37  NETWORK PROBLEM DETERMIN~N APPL~N (NPDA)  BNJTBRF
+**       END
+**       IFASMFR 39  NETWORK LOGICAL DATA MANAGER (NLDM)       AAUTLOGR
+**       END
+         IFASMFR 40                                            IFASMFR4
+         END
+         IFASMFR 41                                            ITVSMF41
+         END
+         IGWSMF SMF42_01=YES         DEVICE STATISTICS
+         END
+         IGWSMF SMF42_02=YES         SMS DASD CONTROL UNIT
+         END
+         IGWSMF SMF42_03=YES         SMS CONFIGURATION CHANGE
+         END
+         IGWSMF SMF42_04=YES         SYSTEM DATA MOVER
+         END
+         IGWSMF SMF42_05=YES         DISK I/O STATISTICS
+         END
+         IGWSMF SMF42_06=YES         DASD DATA SET STATISTICS
+         END
+         IGWSMF SMF42_09=YES         EOV ABENDS
+         END
+         IGWSMF SMF42_0A=YES         INSUFFICIENT SPACE
+         END
+         IGWSMF SMF42_0B=YES         EXTENDED REMOTE COPY STATISTICS
+         END
+         IGWSMF SMF42_0F=YES         VSAM RLS
+         END
+         IGWSMF SMF42_0G=YES         VSAM RLS
+         END
+         IGWSMF SMF42_0H=YES         VSAM RLS CF LOCK STRUCTURE
+         END
+         IGWSMF SMF42_0I=YES         VSAM RLS CF CACHE PARTITION USAGE
+         END
+         IGWSMF SMF42_0J=YES         VSAM RLS LOCAL BUFFER LRU
+         END
+         IGWSMF SMF42_0K=YES         STOW INITIALIZE
+         ICHRUTKN
+         END
+         IGWSMF SMF42_0L=YES         PDS/PDSE MEMBER DELETE
+         ICHRUTKN
+         END
+         IGWSMF SMF42_0M=YES         DFSMSRMM AUDIT
+         END
+         IGWSMF SMF42_0N=YES         DFSMSRMM SECURITY
+         END
+         IGWSMF SMF42_0P=YES         PDS/PDSE MEMBER REPLACE
+         ICHRUTKN
+         END
+         IGWSMF SMF42_0Q=YES         PDS/PDSE MEMBER RENAME
+         ICHRUTKN
+         END
+         IGWSMF SMF42_27=YES         VTOC CHANGED
+         SPACE
+S420RB_O DSECT
+O_1DSNAM DS    CL44                DATA SET NAME
+O_1FMTID DS    CL1                 FORMAT IDENTIFIER               @LvC
+O_1IDC   EQU   X'F1'               FORMAT 1 IDENTIFIER             @LvA
+O_8IDC   EQU   X'F8'               FORMAT 8 IDENTIFIER             @LvA
+O_1DSSN  DS    CL6                 DATA SET SERIAL NUMBER
+*                                     (IDENTIFIES THE FIRST OR     @P1A
+*                                      ONLY VOLUME CONTAINING THE  @P1A
+*                                      DATA SET/SPACE)             @P1A
+O_1VOLSQ DS    XL2                 VOLUME SEQUENCE NUMBER (1-9999) @P1C
+O_1CREDT DS    XL3                 CREATION DATE
+*                                    (DISCONTINUOUS BIN, X'YYDDDD')@P1A
+O_1EXPDT DS    XL3                 EXPIRATION DATE
+*                                    (DISCONTINUOUS BIN, X'YYDDDD')@P1A
+O_1NOEPV DS    XL1                 NUMBER OF DATA EXTENTS ON VOLUME@P1C
+O_1NOBDB DS    XL1                 NUMBER OF BYTES USED IN LAST
+*                                     DIRECTORY BLOCK (PDS ONLY)   @02C
+O_1FLAG1 DS    XL1                 FLAG 1                          @LAA
+O_1COMPR EQU   X'80'  1... ....    COMPRESSABLE EXTENDED FORMAT    @LAA
+*                                  (O_1STRP MUST ALSO BE SET)      @LAA
+O_1CPOIT EQU   X'40'  .1.. ....    CHECKPOINTED DATASET            @03A
+O_1EXPBY EQU   X'20'  ..1. ....    VSE EXP DATE SPEC BY RET PERIOD @08C
+O_1RECAL EQU   X'10'  ...1 ....    DATA SET HAS BEEN RECALLED      @LDA
+O_1LARGE EQU   X'08'  .... 1...    >64K TRACK DATA SET COEXISTENCE @08M
+O_1ENCRP EQU   X'04'  .... .1..    ACCESS METHOD ENCRYPTED DATA SET@LFC
+O_1EATTR EQU   X'03'  .... ..11    Extended attribute setting
+*                                  as specified on the
+*                                  allocation request.(EATTR=)     @V2A
+* Next three EQUs define the possible values for O_1EATTR          @V2A
+*                                  Description for each value:     @V2A
+O_1EATTR_NS EQU X'00'              '0' -  EATTR has not been       @V2A
+*                                  specified.
+*                                  The defaults for EAS
+*                                  eligibility apply.  VSAM
+*                                  data sets default is EAS-
+*                                  eligible.  This is equivalent
+*                                  to EATTR=OPT being specified.
+*                                  Non-VSAM data sets default is
+*                                  not EAS eligible.  This is
+*                                  equivalent to EATTR=NO being
+*                                  specified.                      @V2A
+O_1EATTR_NO EQU X'01'              '1' - EATTR=NO has been
+*                                  specified.   The data set
+*                                  cannot have extended
+*                                  attributes (format 8 and 9
+*                                  DSCBs) or optionally reside in
+*                                  EAS.                            @V2A
+O_1EATTR_OPT EQU X'02'             '2' - EATTR=OPT has been
+*                                  specified.  The data set can
+*                                  have extended attributes and
+*                                  optionally reside in EAS.
+*                                  This is the default for VSAM
+*                                  data sets.                      @V2A
+O_1EATTR_REQ EQU X'03'             '3' - Not Used. EATTR treated as not
+*                                  specified.                      @V2A
+O_1SYSCD DS    CL13                SYSTEM CODE
+O_1REFD  DS    XL3                 DATE LAST REFERENCED            @01C
+*                                    (DISCONTINUOUS BIN, X'YYDDDD')@P1A
+*                                    OR ZERO IF NOT MAINTAINED     @P1A
+O_1SMSFG DS    XL1                 SYSTEM MANAGED STORAGE INDICATORS   X
+                                                                   @L4A
+O_1SMSDS EQU   X'80'  1... ....    SYSTEM MANAGED DATA SET         @L4A
+O_1SMSUC EQU   X'40'  .1.. ....    NO BCS ENTRY EXISTS FOR DATA SET    X
+                                                                   @P6C
+O_1REBLK EQU   X'20'  ..1. ....    SDB AND D.S. MAY BE REBLOCKED   @02C
+O_1CRSDB EQU   X'10'  ...1 ....    DADSM CREATE ORIGINATED BLKSIZE @P5A
+O_1PDSE  EQU   X'08'  .... 1...    PDSE DATA SET                   @P7C
+O_1STRP  EQU   X'04'  .... .1..    EXTENDED FORMAT DATA SET        @LAC
+O_1PDSEX EQU   X'02'  .... ..1.    HFS DATA SET                    @L8A
+O_1DSAE  EQU   X'01'  ........1    Extended attributes are         @L9C
+*                                    maintained in catalog entry  @P11C
+O_1SCEXT DS    0XL3                SECONDARY SPACE EXTENSION       @L4C
+O_1SCXTF DS    XL1                 SECONDARY SPACE EXTENSION FLAG -    X
+                                   ONLY ONE OF THE FOLLOWING FLAGS     X
+                                   WILL BE SET 'ON'                @P4C
+O_1SCAVB EQU   X'80'  1... ....    IF 1, O_1SCXTV IS THE ORIGINAL  @L4A
+*                                  AVERAGE BLOCK LENGTH            @L4A
+O_1SCMB  EQU   X'40'  .1.. ....    IF 1, O_1SCXTV IS IN MEGABYTES  @L4A
+O_1SCKB  EQU   X'20'  ..1. ....    IF 1, O_1SCXTV IS IN KILOBYTES  @L4A
+O_1SCUB  EQU   X'10'  ...1 ....    IF 1, O_1SCXTV IS IN BYTES      @L4A
+O_1SCCP1 EQU   X'08'  .... 1...    IF 1, O_1SCXTV HAS BEEN COMPACTED   X
+                                   BY A FACTOR OF 256              @P4C
+O_1SCCP2 EQU   X'04'  .... .1..    IF 1, O_1SCXTV HAS BEEN COMPACTED   X
+                                   BY A FACTOR OF 65536            @P4C
+*                     .... ..11    RESERVED                        @P3C
+O_1SCXTV DS    XL2                 SECONDARY SPACE EXTENSION VALUE @L4A
+O_1DSORG DS    XL2                 DATA SET ORGANIZATION
+*
+*                    FIRST BYTE OF O_1DSORG
+O_1DSGIS EQU   X'80'  1... ....    IS - INDEXED SEQUENTIAL         @L1A
+*                                  ORGANIZATION
+O_1DSGPS EQU   X'40'  .1.. ....    PS - PHYSICAL SEQUENTIAL        @L1A
+*                                  ORGANIZATION
+O_1DSGDA EQU   X'20'  ..1. ....    DA - DIRECT ORGANIZATION        @L1A
+O_1DSGCX EQU   X'10'  ...1 ....    CX - BTAM OR QTAM LINE GROUP    @L1A
+*        EQU   X'08'  .... 1...    CQ - QTAM DIRECT ACCESS MSG QUE @P1C
+*        EQU   X'04'  .... .1..    MQ - QTAM PROBLEM PROG MSG QUEUE@P1C
+O_1DSGPO EQU   X'02'  .... ..1.    PO - PARTITIONED ORGANIZATION   @L1A
+O_1DSGU  EQU   X'01'  .... ...1    U - UNMOVABLE, THE DATA SET     @P1C
+*                                      CONTAINS LOCATION DEPENDENT
+*                                      INFORMATION
+*
+*                     SECOND BYTE OF O_1DSORG
+O_1DSGGS EQU   X'80'  1... ....    GS - GRAPHICS ORGANIZATION      @L1A
+O_1DSGTX EQU   X'40'  .1.. ....    TX - TCAM LINE GROUP            @L1A
+O_1DSGTQ EQU   X'20'  ..1. ....    TQ - TCAM MESSAGE QUEUE         @L1A
+*        EQU   X'10'  ...1 ....    RESERVED                        @LAC
+O_1ACBM  EQU   X'08'  .... 1...    AM - ACCESS METHOD CONTROL BLOCK@P1C
+O_1ORGAM EQU   X'08'  .... 1...    AM - VSAM DATA SET/SPACE        @P1M
+O_1DSGTR EQU   X'04'  .... .1..    TR - TCAM 3705                  @L1A
+*        EQU   X'02'  .... ..X.    RESERVED                        @P1C
+*        EQU   X'01'  .... ...X    RESERVED                        @P1C
+*                                                                  @P1C
+O_1RECFM DS    XL1                 RECORD FORMAT
+O_1RECFF EQU   X'80'  10.. ....    F - FIXED LENGTH                @L3A
+O_1RECFV EQU   X'40'  01.. ....    V - VARIABLE LENGTH             @L3A
+O_1RECFU EQU   X'C0'  11.. ....    U - UNDEFINED LENGTH            @L3A
+O_1RECFT EQU   X'20'  ..1. ....    T - TRACK OVERFLOW              @L3A
+O_1RECFB EQU   X'10'  ...1 ....    B - BLOCKED: MAY NOT OCCUR WITH @L3A
+*                                      UNDEFINED (U).              @L3A
+O_1RECFS EQU   X'08'  .... 1...    FIXED LENGTH: (X'88')           @L3A
+*                                     STANDARD BLOCKS, NO TRUNCATED@L3A
+*                                     BLOCKS OR UNFILLED TRACKS.   @L3A
+*                                  VARIABLE LENGTH: (X'48')        @L3A
+*                                     SPANNED RECORDS.             @L3A
+O_1RECFA EQU   X'04'  .... .10.    ANSI CONTROL CHARACTER          @L3A
+O_1RECMC EQU   X'02'  .... .01.    MACHINE CONTROL CHARACTER       @L3A
+*                     .... .00.    NO CONTROL CHARACTER            @L3A
+*                     .... ...0    ALWAYS ZERO                     @L3A
+O_1OPTCD DS    XL1                 OPTION CODES -- INDICATES THE   @P1C
+*                                  VARIOUS OPTIONS USED IN         @P1C
+*                                  BUILDING THE DATA SET           @P1C
+*                                                                  @P1A
+* BDAM O_1OPTCD FIELD ASSIGNMENTS (APPLY ONLY WHEN O_1DSGDA IS ON) @P1A
+*              X'80'  1... ....    W - WRITE VALIDITY CHECK        @P1A
+*              X'40'  .1.. ....      - TRACK OVERFLOW              @P1A
+*              X'20'  ..1. ....    E - EXTENDED SEARCH             @P1A
+*              X'10'  ...1 ....    F - FEEDBACK                    @P1A
+*              X'08'  .... 1...    A - ACTUAL ADDRESSING           @P1A
+*              X'04'  .... .1..      - DYNAMIC BUFFERING           @P1A
+*              X'02'  .... ..1.      - READ EXCLUSIVE              @P1A
+*              X'01'  .... ...1    R - RELATIVE BLOCK ADDRESSING   @P1A
+*                                                                  @P1A
+* ISAM O_1OPTCD FIELD ASSIGNMENTS (APPLY ONLY WHEN O_1DSGIS IS ON) @P1A
+*              X'80'  1... ....    W - WRITE VALIDITY CHECK        @P1A
+*              X'40'  .1.. ....    U - ACCUMULATE TRACK INDEX ENT  @P1A
+*              X'20'  ..1. ....    M - MASTER INDECIES             @P1A
+*              X'10'  ...1 ....    I - INDEPENDENT OVERFLOW AREA   @P1A
+*              X'08'  .... 1...    Y - CYLINDER OVERFLOW AREA      @P1A
+*              X'04'  .... .X..    RESERVED                        @P1A
+*              X'02'  .... ..1.    L - DELETE OPTION               @P1A
+*              X'01'  .... ...1    R - REORGANIZATION CRITERIA     @P1A
+*                                                                  @P1A
+* BPAM/BSAM/QSAM O_1OPTCD FIELD ASSIGNMENTS                        @P1A
+*                   (APPLY ONLY WHEN O_1DSGPO OR O_1DSGPS IS ON)   @P1A
+*              X'80'  1... ....    W - WRITE VALIDITY CHECK        @P1A
+*              X'40'  .1.. ....    U - ALLOW DATA CHECK (1403 PRTR)@P1A
+*              X'20'  ..1. ....    C - CHAINED SCHEDULING USING PCI@P1A
+*              X'10'  ...1 ....    H - VSE/OS INTERCHANGE FEATURE  @P1A
+*              X'08'  .... 1...    B - TREAT EOF AS EOV (TAPE)     @P1A
+*              X'04'  .... .1..    Z - SEARCH DIRECT               @P1A
+*              X'02'  .... ..1.    T - USER LABEL TOTALING         @P1A
+*              X'01'  .... ...1    J - FOR 3800 PRINTING SUBSYSTEM @P1A
+*                                                                  @P1A
+* VSAM O_1OPTCD FIELD ASSIGNMENTS (APPLY ONLY WHEN O_1ORGAM IS ON) @02C
+O_1OPTIC EQU   X'80'  1... ....    DATA SET CATALOGED IN ICF CTLG  @P1C
+O_1OPTBC EQU   X'40'  .1.. ....    DATA SET IS ICF CATALOG         @P1C
+*                     ..XX XXXX    RESERVED                        @P1C
+*
+O_1BLKL  DS    XL2                 BLOCK LENGTH (TYPE F RECORDS),  @L3C
+*                                  OR MAX BLKSIZE (U OR V RECORDS) @L3A
+O_1LRECL DS    XL2                 LOGICAL RECORD LENGTH
+*                                  FIXED LENGTH: RECORD LENGTH     @L3A
+*                                  UNDEFINED LENGTH: ZERO          @L3A
+*                                  VARIABLE UNSPANNED: MAX REC LEN @L3A
+*                                  VARIABLE SPANNED:               @L3A
+*                                   <= 32756 BYTES- MAX REC LEN    @02C
+*                                   > 32756 BYTES- X'8000'         @L3A
+O_1KEYL  DS    XL1                 KEY LENGTH (0 - 255)
+O_1RKP   DS    XL2                 RELATIVE KEY POSITION
+O_1DSIND DS    XL1                 DATA SET INDICATORS
+O_1IND80 EQU   X'80'  1... ....    LAST VOLUME CONTAINING DATA IN  @P1C
+*                                     THIS DATA SET                @02C
+O_1IND40 EQU   X'40'  .1.. ....    DATA SET IS RACF DEFINED    @G60ASBJ
+O_1RACDF EQU   O_1IND40            SAME USE AS BIT O_1IND40        @LBA
+O_1IND20 EQU   X'20'  ..1. ....    BLOCK LENGTH IS A MULTIPLE  @G60ASBJ
+*                                     OF 8 BYTES               @G60ASBJ
+O_1IND10 EQU   X'10'  ...1 ....    PASSWORD IS REQUIRED TO     @G60ASBJ
+*                                  READ OR WRITE OR BOTH-SEE   @G60ASBJ
+*                                     O_1IND04                 @G60ASBJ
+O_1SECTY EQU   O_1IND10            SAME USE AS BIT O_1IND10        @LBA
+O_1IND08 EQU   X'08'  .... 1...    DS MODIFIED SINCE RECALL        @LDC
+O_1IND04 EQU   X'04'  .... .1..    IF O_1IND10 IS 1 THEN           @P1C
+*                                     IF O_1IND04 IS . . .         @P1C
+*                                        1-PASSWORD REQUIRED TO    @P1C
+*                                          WRITE BUT NOT TO READ   @P1C
+*                                        0-PASSWORD REQUIRED TO    @P1C
+*                                          WRITE OR TO READ        @02C
+O_1WRSEC EQU   O_1IND04            SAME USE AS BIT O_1IND04        @LBA
+O_1IND02 EQU   X'02'  .... ..1.    DATA SET OPENED FOR OTHER   @G60ASBJ
+*                                     THAN INPUT SINCE LAST    @G60ASBJ
+*                                     BACKUP COPY MADE.        @G60ASBJ
+O_1DSCHA EQU   O_1IND02            SAME USE AS BIT O_1IND02    @G60ASBJ
+O_1IND01 EQU   X'01'  .... ...1    SECURE CHECKPOINT DATA SET      @01C
+O_1CHKPT EQU   O_1IND01            SAME AS O_1IND01                @L3C
+O_1SCALO DS    0XL4                SECONDARY ALLOCATION            @L3C
+O_1SCAL1 DS    XL1                 SPACE PARAMETERS                @P1C
+O_1DSPAC EQU   X'C0'  XX.. ....    BIT PATTERN FOR SPACE REQUEST   @L3A
+O_1CYL   EQU   X'C0'  11.. ....    CYLINDER REQUEST                @L3A
+O_1TRK   EQU   X'80'  10.. ....    TRACK REQUEST                   @L3A
+O_1AVR   EQU   X'40'  01.. ....    AVERAGE BLOCK LENGTH REQUEST    @L3A
+O_1AVRND EQU   X'41'  01.. ...1    AVERAGE BLOCK AND ROUND REQUEST @P1C
+O_1MSGP  EQU   X'20'  ..1. ....    RESERVED (WAS MSGP)             @02C
+O_1EXT   EQU   X'10'  ...1 ....    EXTENSION TO SECONDARY SPACE    @L4A
+*                                  DESCRIPTION EXISTS (O_1SCEXT)   @L4A
+O_1CONTG EQU   X'08'  .... 1...    CONTIGUOUS REQUEST              @L3A
+O_1MXIG  EQU   X'04'  .... .1..    MXIG REQUEST                    @L3A
+O_1ALX   EQU   X'02'  .... ..1.    ALX REQUEST                     @L3A
+*              X'01'  .... ...1    ROUND REQUEST                   @P1A
+O_1DSABS EQU   X'00'  0000 0000    ABSOLUTE TRACK REQUEST          @L3A
+O_1SCAL3 DS    XL3                 SECONDARY ALLOCATION QUANTITY   @P1C
+O_1LSTAR DS    XL3                 LAST USED TRACK AND BLOCK ON    @P1C
+*                                     TRACK (TTR).  NOTE:  FOR     @02C
+*                                     EXTENDED FORMAT, HIGH ORDER  @02C
+*                                     BYTES OF TT MAY BE CONTAINED @02C
+*                                     O_1TRBAL.                    @02C
+O_1TRBAL DS    XL2                 FOR EXTENDED FORMAT: 2 HIGH     @02C
+*                                     ORDER BYTES OF LAST USED     @02C
+*                                     TRACK (TTTTR).               @02C
+*                                  FOR PDSE, HFS, OR VSAM: ZERO    @02C
+*                                  OTHERWISE: CODE INDICATING      @02C
+*                                     SPACE REMAINING ON LAST      @02C
+*                                     USED TRACK.                  @02C
+         DS    XL1                 RESERVED
+O_1TTTHI DS    XL1                 HIGH ORDER BYTE OF O_1LSTAR     @LCA
+*                                  SEE O_1LARGE IN O_1FLAG1        @LCA
+O_1EXT1  DS    XL10                FIRST EXTENT DESCRIPTION
+*        FIRST BYTE                EXTENT TYPE INDICATOR
+*              X'81'  1... ...1    EXTENT ON CYLINDER BOUNDARIES   @L3A
+*              X'80'  1... ....    RESERVED (WAS SPLIT CYLINDER)   @LAC
+*              X'40'  01.. ....    USER LABEL EXTENT (FIRST EXTENT @L3A
+*                                     ONLY, AND IS NOT COUNTED     @P1C
+*                                     IN O_1NOEPV)                 @P1A
+*              X'04'  .... .1..    INDEX AREA EXTENT (ISAM)        @L3A
+*              X'02'  .... ..1.    OVERFLOW AREA EXTENT (ISAM)     @L3A
+*              X'01'  .... ...1    USER'S DATA BLOCK EXTENT OR     @L3A
+*                                     IS A PRIME AREA EXTENT (ISAM)@P1C
+*              X'00'  0000 0000    FOLLOWING 9 BYTES DO NOT        @L3A
+*                                     INDICATE ANY EXTENT          @P1C
+*        SECOND BYTE               EXTENT SEQUENCE NUMBER
+*        THIRD - SIXTH BYTES       LOWER LIMIT (CCHH)
+*        SEVENTH - TENTH BYTES     UPPER LIMIT (CCHH)
+*/********************************************************************/
+*/* Extent descriptors contain low/upper track addresses in CCHH     */
+*/* format or CCCCHHHH showing each nibble.  For a volume with       */
+*/* more than 65,520 cylinders, the extent descriptors may describe  */
+*/* low/upper track addresses in CCCCcccH format, where 'CCCC' are   */
+*/* the 16 low-order bits of the cylinder address and 'ccc' are the  */
+*/* 12 high-order bits of the cylinder address. The head address     */
+*/* 'H' is the 4 bit address of the track.                           */
+*/********************************************************************/
+O_1EXT2  DS    XL10                SECOND EXTENT DESCRIPTION
+O_1EXT3  DS    XL10                THIRD EXTENT DESCRIPTION
+O_1PTRDS DS    XL5                 O_1FMTID="1": Zeroes or pointer @LvC
+*                                   (CCHHR) to format 2 or 3 DSCB. @LvC
+*                                  O_1FMTID="8": ptr to format 9   @LvC
+*                                   DSCB                           @LvC
+         SPACE
+S420RB_N DSECT
+         IECSDSL1 1
+         END
+         IFASMFR 43                                            IAZSMF43
+         END
+         IFASMFR 44                                            IFASMFR4
+         END
+         IFASMFR 45                                            IAZSMF45
+         END
+         IFASMFR 47                                            IAZSMF47
+         END
+         IFASMFR 48                                            IAZSMF48
+         END
+         IFASMFR 49                                            IAZSMF49
+         END
+         IFASMFR 50                                            IFASMFR5
+         END
+         IFASMFR 52                                            IAZSMF52
+         END
+         IFASMFR 53                                            IAZSMF53
+         END
+         IFASMFR 54                                            IAZSMF54
+         END
+         IFASMFR 55                                            IAZSMF55
+         END
+         IFASMFR 56                                            IAZSMF56
+         END
+         IFASMFR 57                                            IAZSMF57
+         END
+         IFASMFR 58                                            IAZSMF58
+         END
+**       IFASMFR 59  BULK DATA TRANSFER (BDT)                  BDTDSMF
+**       END
+         IFASMFI6 60
+         END
+         IFASMFI6 61
+         END
+         IFASMFR 62  DFP                                       IDASMF62
+         END
+         IFASMFR 63  DFP                                       IDASMF63
+         END
+         IFASMFR 64  DFP                                       IDASMF64
+         END
+         IFASMFI6 65
+         END
+         IFASMFI6 66
+         END
+         IFASMFR 67  DFP                                       IGGSMF67
+         END
+         IFASMFR 68  DFP                                       IGGSMF68
+         END
+         IFASMFR 69  DFP                                       IGGSMF69
+         END
+         ERBSMF70 1  RMF CPU
+         END
+         ERBSMF70 2  RMF CRYPTO
+         END
+         ERBSMF71 ,  RMF PAGING ACTIVITY
+         END
+         ERBSMF72 1  RMF WORKLOAD ACTIVITY
+         END
+         ERBSMF72 2  RMF MONITOR III
+         END
+         ERBSMF72 3  RMF WORKLOAD ACTIVITY - GOAL MODE
+         END
+         ERBSMF72 4  RMF MONITOR III - GOAL MODE
+         END
+         ERBSMF72 5  RMF MONITOR III - SUSPEND LOCKS AND GRS DATA
+         END
+         ERBSMF73 ,  RMF CHANNEL PATH ACTIVITY
+         END
+         ERBSMF74 1  RMF DEVICE ACTIVITY
+         END
+         ERBSMF74 2  RMF XCF ACTIVITY
+         END
+         ERBSMF74 3  RMF OMVS KERNEL ACTIVITY
+         END
+         ERBSMF74 4  RMF COUPLING FACILITY ACTIVITY
+         END
+         ERBSMF74 5  RMF CACHE SUBSYSTEM DEVICE ACTIVITY
+         END
+         ERBSMF74 6  RMF HFS STATISTICS
+         END
+         ERBSMF74 7  RMF FICON DIRECTOR STATISTICS
+         END
+         ERBSMF74 8  RMF ENTERPRISE DISK SYSTEM STATISTICS
+         END
+         ERBSMF74 9  RMF PCI EXPRESS BASED FUNCTION ACTIVITY
+         END
+         ERBSMF74 10 RMF EXTENDED ASYNCHRONOUS DATA MOVER (EADM) STATS
+         END
+         ERBSMF75 ,  RMF PAGE DATA SET ACTIVITY
+         END
+         ERBSMF76 ,  RMF TRACE ACTIVITY
+         END
+         ERBSMF77 ,  RMF ENQUEUE ACTIVITY
+         END
+         ERBSMF78 1  RMF 308X/4381 I/O QUEUING ACTIVITY
+         END
+         ERBSMF78 2  RMF VIRTUAL STORAGE ACTIVITY
+         END
+         ERBSMF78 3  RMF I/O QUEUEING (AND HYPERPAV/SUPERPAV) ACTIVITY
+**       END
+**       ERBSMF79 1  RMF ADDRESS SPACE STATE DATA
+**       END
+**       ERBSMF79 2  RMF ADDRESS SPACE RESOURCE DATA
+**       END
+**       ERBSMF79 3  RMF STORAGE/PROCESSOR (SRCS) DATA
+**       END
+**       ERBSMF79 4  RMF PAGING ACTIVITY
+**       END
+**       ERBSMF79 5  RMF ADDRESS SPACE SRM DATA
+**       END
+**       ERBSMF79 6  RMF RESERVE (SENQR) DATA
+**       END
+**       ERBSMF79 7  RMF ENQUEUE CONTENTION (SENQ) DATA
+**       END
+**       ERBSMF79 9  RMF DEVICE ACTIVITY
+**       END
+**       ERBSMF79 11 RMF PAGE DATA SET ACTIVITY
+**       END
+**       ERBSMF79 12 RMF CHANNEL PATH ACTIVITY
+**       END
+**       ERBSMF79 14 RMF I/O QUEUING ACTIVITY
+**       END
+**       ERBSMF79 15 RMF IRLM LONG LOCK DETECTION
+         END
+         IFASMFR 80                                            IFASMFR9
+         END
+         IFASMFR 81                                            IFASMFR9
+         END
+         IFASMFR 83                                            IFASMFR9
+         END
+         IFASMFR 85  OAM                                       CBRSMF
+         END
+         IFASMFR 87  GRS                                       ISGYSMFR
+         END
+         IFASMFR 88  LOGGER                                    IXGSMF88
+         END
+         IFASMFR 89                                            IFASMFRA
+         END
+         IFASMFR 90                                            IFASMFRA
+         END
+         IFASMFR 92  OMVS FILE SYSTEM                          BPXYSMFR
+         END
+         IFASMFR 94  AUTOMATED TAPE LIBRARY FUNCTION           IECSMF94
+         END
+**       IFASMFR 96  INTEGRATED REASONING SHELL (TIRS)         EWQSMF96
+**       END
+         IFASMFR 97  WORKLOAD MANAGER                          IWMSMF97
+         END
+         IFASMFR 98                                            IHAHR098
+         END
+         EZASMF76 ,    TYPE 118 - TELNET/FTP       SEZACMAC -> EZASMF76+
+               FTP=YES,           FTP SMF DSECT FOR SERVER             +
+               FTPC=YES,          FTP SMF DSECT FOR CLIENT             +
+               TELNET=YES,        TELNET SMF DSECT                     +
+               API=YES,           SMF API DSECT                        +
+               STAT=YES,          TCPIP STATS DSECT                    +
+               STATLEN=YES        TCPIP STATS TRIPLE LEN
+         END
+//PHONYDD  DD *          <== DELETE TO INCLUDE RECORDS BELOW
+         COPY  DFHSMFDS           TYPE 110 HEADER AND PRODUCT SECTION
+         END
+         FOTSMF77 SSH=YES,HEADER=YES    TYPE 119 - OPENSSH     FOTSMF77
+         END
+         IFASMFR 124 I/O SUPERVISOR (IOS) INFORMATION          IOSDS124
+         END
+         IFASMFR 125 GENERIC TRACKER (USED TO BE 117)          GTZZSMF1
+         END
+/*
+//*
+//EXSYM   EXEC PGM=REVEXSYM
+//STEPLIB  DD  DISP=SHR,DSN=&SYSUID..TEST.LOAD
+//OBJECTIN DD  DISP=SHR,DSN=&SYSUID..FB80.DATA
+//ASMPRTIN DD  DISP=SHR,DSN=&SYSUID..ASMPRT
+//PUNCHOUT DD  DSN=&&SOURCE,DISP=(NEW,PASS),
+//             UNIT=VIO,SPACE=(CYL,30),
+//             DSORG=PS,RECFM=FB,LRECL=80
+//SYSABEND DD  SYSOUT=*
+//IDIOFF   DD  DUMMY
+//*
+//UPDTE   EXEC PGM=IEBUPDTE,PARM=NEW
+//SYSPRINT DD  SYSOUT=*
+//SYSUT2   DD  DSN=&&MACLIB,DISP=(NEW,PASS),
+//             UNIT=VIO,SPACE=(CYL,(2,0,20)),
+//             DSORG=PO,RECFM=FB,LRECL=80
+//SYSIN    DD  *
+./ ADD NAME=RECTYPE
+         MACRO
+&NAME    RECTYPE &OFFSET=0,&MASK=1,&BASE=0,&SHIFT=2,&FLAG=0,&LIMIT=0
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECTYPE                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - HEADER FOR RECORD/SECTION TYPE VECTOR TABLE     *
+.*                                                                    *
+.*                                                                    *
+.* FUNCTION - RECTYPE DESCRIBES HOW THE INDEX INTO THE ADDRESS        *
+.*            VECTOR WHICH IMMEDIATELY FOLLOWS THIS STRUCTURE IS      *
+.*            TO BE ACQUIRED FROM A RECORD'S DATA.  THE ADDRESS       *
+.*            VECTOR ITSELF CONTAINS NO INFORMATION ABOUT RECORD      *
+.*            OR SECTION TYPES/SUBTYPES.                              *
+.*                                                                    *
+.*            EACH ENTRY OF THE ADDRESS VECTOR POINTS TO EITHER A     *
+.*            RECSECT OR A RECLIST OR A FURTHER RECTYPE STRUCTURE     *
+.*            WHICH BEGINS OR FURTHER QUALIFIES THE STRUCTURAL        *
+.*            DESCRIPTION OF THE RECORD (OR SECTION) TYPE (OR         *
+.*            SUBTYPE).                                               *
+.*                                                                    *
+.*            A ZERO ADDRESS VECTOR ENTRY MEANS THAT THE TYPE         *
+.*            OR SUBTYPE IS NOT KNOWN.                                *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF RECORD TYPE INDICATOR IN RECORD OR SECTION    *
+.*                                                                    *
+.* &LIMIT   - MAXIMUM VALID (SUB)TYPE VALUE - 0 MEANS NO LIMIT        *
+.*                                                                    *
+.* &BASE    - MINIMUM (SUB)TYPE - THIS VALUE IS SUBTRACTED FROM       *
+.*            THE EXTRACTED VALUE (AFTER FIRST BEING COMPARED TO      *
+.*            THE LIMIT VALUE) BEFORE BEING USED FOR INDEXING         *
+.*                                                                    *
+.* &FLAG    - FLAG BYTE VALUE                                         *
+.*            0 - TYPE INDICATOR OFFSET IS A RECORD OFFSET            *
+.*            1 - TYPE INDICATOR OFFSET IS A SECTION OFFSET           *
+.*                                                                    *
+.* &MASK    - BYTE MASK VALUE (IN THE 1 TO 15 RANGE) FOR REGISTER     *
+.*            INSERTION TO PROCESS TYPE WHERE THE TYPE BYTE COUNT     *
+.*            WOULD EQUAL THE NUMBER OF 1-BITS IN THIS MASK           *
+.*                                                                    *
+.* &SHIFT   - BIT SHIFT LEFT COUNT TO FORM INDEX INTO ADDRESS TABLE   *
+.*                                                                    *
+.**********************************************************************
+.*
+         DC    0F                      ALIGNMENT FOR FUN
+&NAME    DC    Y(C' T')                RECORD TYPING DESCRIPTOR
+         DC    Y(&OFFSET)              TYPE INDICATOR OFFSET
+         DC    A(&LIMIT)               HIGHEST VALID TYPE
+         DC    A(&BASE)                LOWEST VALID TYPE
+         DC    AL1(&FLAG)              FLAG BYTE VALUE
+         DC    AL1(&MASK)              MASK IN 1 -> 15 RANGE
+         DC    Y(&SHIFT)               SHIFT COUNT FOR INDEXING
+         MEND
+./ ADD NAME=RECLIST
+         MACRO
+&NAME    RECLIST &OFFSET=0,&MASK=1,COUNT=1
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECLIST                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - HEADER FOR RECORD/SECTION TYPE LIST             *
+.*                                                                    *
+.*                                                                    *
+.* FUNCTION - RECLIST DESCRIBES HOW THE TYPE OR SUBTYPE VALUE IS      *
+.*            TO BE EXTRACTED FROM THE RECORD'S DATA BEFORE BEING     *
+.*            USED TO MATCH AN ENTRY IN THE VALUE+ADDRESS VECTOR      *
+.*            TABLE THAT IMMEDIATELY FOLLOWS THIS STRUCTURE.          *
+.*                                                                    *
+.*            THE ADDRESS PART OF EACH ENTRY OF THE VECTOR TABLE      *
+.*            POINTS TO EITHER A RECSECT OR A RECTYPE OR A            *
+.*            FURTHER RECLIST STRUCTURE WHICH BEGINS OR FURTHER       *
+.*            QUALIFIES THE STRUCTURAL DESCRIPTION OF THE RECORD      *
+.*            (OR SECTION) TYPE (OR SUBTYPE).                         *
+.*                                                                    *
+.*            TYPE OR SUBTYPE VALUES WHICH HAVE NO MATCHING ENTRY     *
+.*            ARE NOT KNOWN.                                          *
+.*                                                                    *
+.*            THE MAIN DIFFERENCE BETWEEN RECLIST AND RECTYPE IS      *
+.*            THAT RECTYPE IS INTENDED TO HANDLE A CONTINUUM OF       *
+.*            TYPES WITHIN A LOWER AND UPPER RANGE LIMIT, WHILE       *
+.*            RECLIST IS INTENDED TO HANDLE CASES WHERE KNOWN TYPE    *
+.*            VALUES SPARSELY POPULATE THE POSSIBLE TYPE-SPACE.       *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF RECORD TYPE INDICATOR IN RECORD OR SECTION    *
+.*                                                                    *
+.* &MASK    - BYTE MASK VALUE (IN THE 1 TO 15 RANGE) FOR REGISTER     *
+.*            INSERTION TO PROCESS TYPE WHERE THE TYPE BYTE COUNT     *
+.*            WOULD EQUAL THE NUMBER OF 1-BITS IN THIS MASK           *
+.*                                                                    *
+.* &COUNT   - NUMBER OF ENTRIES IN THE VALUE+ADDRESS VECTOR TABLE     *
+.*                                                                    *
+.**********************************************************************
+.*
+         DC    0F                      ALIGNMENT FOR FUN
+&NAME    DC    Y(C' L')                RECORD TYPE LIST DESCRIPTOR
+         DC    Y(&OFFSET)              TYPE INDICATOR RECORD OFFSET
+         DC    Y(&MASK)                MASK IN 1 -> 15 RANGE
+         DC    Y(&COUNT)               LIST VECTOR TABLE ENTRY COUNT
+         MEND
+./ ADD NAME=RECSECT
+         MACRO
+&NAME    RECSECT &FLG1,&FLG2,&OO,&LO,&NO,&OM,&LM,&NM,&LVL,&NXTSECT,    +
+               &DESC=
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECSECT                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - DEFINE RECORD SECTION                           *
+.*                                                                    *
+.*                                                                    *
+.* &FLG1    - FLAG BYTE 2 (0-255)                                     *
+.*            X'80' - LAST SECTION ENTRY FOR RECORD                   *
+.*            X'40' - INSTANCES OF THIS SECTION ARE CHAINED           *
+.*            X'20' - ACTUAL SECTION LENGTH BYTE COUNT FOLLOWS        *
+.*            X'10' - OFFSET BASED ON INDEX SECTION, NOT RECORD       *
+.*            X'08' - TRIPLET ORDER IS OFFSET, COUNT, LENGTH          *
+.*            X'04' - SECTION OFFSET IS 4 BYTES IN SIZE               *
+.*            X'02' - 2-BYTE SECTION LENGTH FOLLOWS 4-BYTE OFFSET     *
+.*            X'01' - 2-BYTE SECTION COUNT FOLLOWS 2-BYTE LENGTH      *
+.*                                                                    *
+.* &FLG2    - FLAG BYTE 2 (0-255) - NOT CURRENTLY USED                *
+.*                                                                    *
+.* &OO      - 2-BYTE OFFSET OF WHERE SECTION OFFSET IS STORED         *
+.* &LO      - 2-BYTE OFFSET OF WHERE SECTION LENGTH IS STORED         *
+.* &NO      - 2-BYTE OFFSET OF WHERE SECTION NUMBER IS STORED         *
+.* &OM      - ICM MASK (0-15) FOR OFFSET - IF 0 &OO IS ACTUAL VALUE   *
+.* &LM      - ICM MASK (0-15) FOR LENGTH - IF 0 &LO IS ACTUAL VALUE   *
+.* &NM      - ICM MASK (0-15) FOR NUMBER - IF 0 &NO IS ACTUAL VALUE   *
+.*                                                                    *
+.* &LVL     - LEVEL (0-255) OF THE SECTION CONTAINING THE DETAILS OF  *
+.*            THIS SECTION PLUS ONE - LEVEL 0 IS THE RECORD BASE      *
+.*                                                                    *
+.* &NXTSECT - NAME OF FOLLOWING SECTION                               *
+.* &DESC    - BRIEF DESCRIPTION OF SECTION                            *
+.*                                                                    *
+.**********************************************************************
+.*
+         LCLC  &LABEL1
+         LCLC  &LABEL2
+&LABEL1  SETC  '#S'.'&SYSNDX'
+&LABEL2  SETC  '#E'.'&SYSNDX'
+         AIF   (T'&NAME EQ 'O').NMLNOK
+.NMLNOK  ANOP
+&NAME    DC    CL2' D'                 DSECT DESCRIPTOR INDICATOR
+         DC    AL1(&FLG1)              FLAG BYTE 1
+         DC    AL1(&FLG2)              FLAG BYTE 2
+         AIF   (T'&NXTSECT EQ 'O').NONEXT
+         DC    AL4(&NXTSECT-*+4)       OFFSET TO NEXT SECTION'S ' D'
+         AGO   .NEXTOK
+.NONEXT  ANOP
+         DC    AL4(0)                  NO NEXT SECTION
+.NEXTOK  ANOP
+         DC    AL2(&OO)                OFFSET LOCATOR
+         DC    AL2(&LO)                LENGTH LOCATOR
+         DC    AL2(&NO)                NUMBER LOCATOR
+         DC    AL1(&OM)                OFFSET ICM MASK
+         DC    AL1(&LM)                LENGTH ICM MASK
+         DC    AL1(&NM)                NUMBER ICM MASK
+         DC    AL1(&LVL)               STRUCTURE HIERARCHY LEVEL
+         DC    AL1(&LABEL2-&LABEL1)    LENGTH OF DSECT NAME
+&LABEL1  EQU   *
+         AIF   (T'&NAME EQ 'O').NAMEOK
+         DC    C'&NAME'                NAME OF DSECT
+.NAMEOK  ANOP
+         AIF   (T'&DESC EQ 'O').DESCOK
+         DC    C&DESC
+.DESCOK  ANOP
+&LABEL2  EQU   *
+         MEND
+./ ADD NAME=RECITEM
+         MACRO
+&NAME    RECITEM &OFFSET,&LENGTH,&FLGS
+.*
+.**********************************************************************
+.*                                                                    *
+.* MACRO NAME - RECITEM                                               *
+.*                                                                    *
+.* DESCRIPTIVE NAME - DEFINE ITEM IN CURRENT RECORD SECTION           *
+.*                                                                    *
+.*                                                                    *
+.* &OFFSET  - OFFSET OF ITEM FROM START OF SECTION                    *
+.*                                                                    *
+.* &LENGTH  - LENGTH OF ITEM IN BYTES                                 *
+.*                                                                    *
+.* &FLGS    - DECIMAL NUMBER IN THE 0-255 RANGE DEFINING A FLAG BYTE  *
+.*                                                                    *
+.*            X'80' - SHOW AS TIME-OF-DAY JIFFIES                     *
+.*            X'40' - SHOW AS HEXADECIMAL                             *
+.*            X'20' - SHOW AS DECIMAL                                 *
+.*            X'10' - SHOW AS CHARACTER                               *
+.*            X'08' - SHOW AS HEXADECIMAL FLOATING POINT              *
+.*                                                                    *
+.*            X'50' - SHOW AS HEXADECIMAL OR CHARACTER                *
+.*            X'60' - SHOW AS HEXADECIMAL OR DECIMAL                  *
+.*                                                                    *
+.*            X'22' - SHOW STORAGE FROM KILOBYTE COUNT                *
+.*            X'24' - SHOW STORAGE FROM BYTE COUNT                    *
+.*            X'42' - SHOW AS DATA SET ORGANIZATION                   *
+.*            X'44' - SHOW AS RECORD FORMAT                           *
+.*            X'90' - SHOW TIME FROM 128 MICROSECOND UNITS            *
+.*            X'A0' - SHOW TIME FROM CENTISECOND (JIFFY) UNITS        *
+.*            X'C0' - SHOW TIME FROM STCK VALUE                       *
+.*            X'D0' - SHOW TIME FROM 1.024 MILLSECOND UNITS           *
+.*                                                                    *
+.**********************************************************************
+.*
+         LCLC  &LABEL1
+         LCLC  &LABEL2
+&LABEL1  SETC  '#S'.'&SYSNDX'
+&LABEL2  SETC  '#E'.'&SYSNDX'
+         DC    CL2' I'                 RECORD ITEM INDICATOR
+         DC    AL2(&OFFSET)            OFFSET OF ITEM
+         DC    AL2(&LENGTH)            LENGTH OF ITEM
+         DC    AL1(&FLGS)              FLAG BYTE
+         DC    AL1(&LABEL2-&LABEL1)    LENGTH OF ITEM NAME
+&LABEL1  EQU   *
+         AIF   (T'&NAME EQ 'O').NAMEOK
+         DC    C'&NAME'                NAME OF ITEM
+.NAMEOK  ANOP
+&LABEL2  EQU   *
+         MEND
+./ ENDUP
+/*
+//*
+//ASM     EXEC PGM=ASMA90,PARM='TERM,NODECK,OBJECT,LC(150),NOXREF'
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=&&MACLIB,DISP=(OLD,DELETE)
+//         DD  DSN=SYS1.MODGEN,DISP=SHR
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(10,2))
+//SYSLIN   DD  DSN=&&OBJSET,DISP=(NEW,PASS),UNIT=VIO,
+//             SPACE=(CYL,(1,1)),
+//             DCB=(DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=4080)
+//SYSIN    DD  DSN=&&SOURCE,DISP=(OLD,DELETE)
+//*
+//LKED    EXEC PGM=IEWL,COND=(0,NE,ASM),
+//             PARM='LIST,MAP,REUS,RENT,REFR,OL,NCAL'
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&OBJSET,DISP=(OLD,DELETE)
+//SYSUT1   DD  UNIT=VIO,SPACE=(CYL,(1,1))
+//SYSLMOD  DD  DSN=&SYSUID..REVIEW.LOAD(REVSMFZ),DISP=SHR
+//

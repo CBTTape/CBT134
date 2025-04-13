@@ -1,0 +1,24 @@
+/* REXX       RANDOM      replaces the CLIST 'RANDOM' that malfunctions
+                          by always delivering the same number.
+
+*/ arg argline                         /* pro-forma quick-start      */
+address TSO
+arg parms "((" opts
+opts = Strip(opts,"T",")")
+parse var opts "TRACE"  tv  .
+parse value tv "N"  with  tv .
+rc = Trace("O"); rc = Trace(tv)
+
+if parms = '' then do
+   say "At least one value is required for proper operation."
+   say "You may provide both high- and low-limits for the result: ",
+       "'RANDOM  39 4'  or just the high-limit:  'RANDOM 65' ."
+   say "If the low-limit is not specified, it will default to '0'."
+   exit
+   end
+parse var parms hi lo .
+parse value lo 0   with  lo  .
+rc = Random( lo,hi )
+if  Sysvar("SYSNEST") = "NO" then say rc
+
+exit rc                                /*@ RANDOM                    */

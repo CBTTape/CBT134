@@ -1,0 +1,15 @@
+The #PDSTBL and @PRINTO members of this file originally (since 1989)
+contained a modified version of the same-named members from CBT file
+182 - the PDS command.  The intent was to slightly modify how PDS
+processed REVIEW and PRINTOFF subcommands that specified a colon (:)
+meaning "select all members".  The changes were to replace the
+behavior of issuing the generated command against each member in turn
+to issuing the command once for the whole data set.
+
+The contents of these two members were cloned from PDS 8.3 but were
+also applicable for PDS 8.4.  PDS 8.5 incorparated these changes into
+the base code, and they remain in the current PDS 8.6 release.  As a
+result, there is now no need to ship these members which became out of
+date replicas of the current members of the PDS command package.
+
+Greg Price  April 2024
